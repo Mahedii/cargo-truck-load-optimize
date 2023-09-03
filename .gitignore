@@ -2,6 +2,9 @@
 node_modules/
 npm-debug.log
 yarn-error.log
+storage/framework/views/*.php
+public/admin/assets/images/
+public/frontend/assets/img/
 
 # Laravel 4 specific
 bootstrap/compiled.php

@@ -1,0 +1,36 @@
+/* custom styles for the slider images */
+.slide {
+    display: none;
+}
+.slide.active {
+    display: block;
+}
+
+/* Additional CSS styles for arrow buttons in slider */
+.slider-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 30px;
+    cursor: pointer;
+}
+.prev-button {
+    left: 20px;
+}
+.next-button {
+    right: 20px;
+}
+.slider-next-btn, .slider-prev-btn {
+    height: 50px;
+    width: 50px;
+    font-size: 12px;
+    border-radius: 50%;
+    border: solid 2px #231E41;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+}
+/* custom styles for the slider images ends*/
+
