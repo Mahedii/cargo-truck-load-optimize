@@ -40,6 +40,8 @@ Route::get('user-signout', [AuthController::class, 'signOut'])->name('user.signo
 
 Route::get('/admin/dashboard', [AuthController::class, 'dashboard'])->middleware(['auth'])->name('dashboard');
 
+Route::get('/cargo/distribute/{cargo_id}/optimize', [DistributeCargoFetchDataController::class, 'getOptimizedData'])->name('distributeCargo.fetch.optimizedData');
+
 Route::group(['middleware' => ['auth']], function () {
 
     Route::prefix('cargo')->group(function () {
@@ -53,7 +55,8 @@ Route::group(['middleware' => ['auth']], function () {
 
         Route::get('/distribute/data', [DistributeCargoFetchDataController::class, 'index'])->name('distributeCargo.load.allData');
         Route::post('/distribute/add', DistributeCargoAddDataController::class)->name('distributeCargo.addData');
-        Route::get('/distribute/{cargo_id}/optimize', [DistributeCargoFetchDataController::class, 'getOptimizedData'])->name('distributeCargo.fetch.optimizedData');
+        Route::post('/distribute/get/optimized-data', [DistributeCargoFetchDataController::class, 'getOptimizedData'])->name('distributeCargo.get.optimizedData');
+        // Route::get('/distribute/{cargo_id}/optimize', [DistributeCargoFetchDataController::class, 'getOptimizedData'])->name('distributeCargo.fetch.optimizedData');
     });
 
     Route::prefix('truck')->group(function () {

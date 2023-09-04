@@ -1,4 +1,4 @@
-{{-- <script type="text/javascript">
+<script type="text/javascript">
 
     $(document).ready(function () {
 
@@ -65,7 +65,7 @@
                             table = $('#buttons-datatables').DataTable();
                             table.clear();
                             var rows = showData(data.fetchedData);
-                            var optimizedData = getOptimizedData(cargo_id);
+                            // var optimizedData = getOptimizedData(cargo_id);
                             $('#available-box-info').removeClass('hide');
                         } else {
                             $('#available-box-info').addClass('hide');
@@ -121,4 +121,4 @@
         }
     });
 
-</script> --}}
+</script>

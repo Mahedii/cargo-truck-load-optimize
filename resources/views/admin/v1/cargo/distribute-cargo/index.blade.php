@@ -45,8 +45,7 @@
                         </div>
                     </div>
 
-
-                    <form method="POST" action="{{ route('distributeCargo.addData') }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ route('distributeCargo.get.optimizedData') }}" enctype="multipart/form-data">
 
                         @csrf
 
@@ -102,9 +101,9 @@
                                                 </div>
                                             </div>
 
-                                            <a class="btn btn-success" href="{{ route('distributeCargo.fetch.optimizedData', 1) }}">
+                                            {{-- <a class="btn btn-success" href="{{ route('distributeCargo.fetch.optimizedData', 1) }}">
                                                 <i class="ri-file-list-3-line"></i> <span>Cargo Info</span>
-                                            </a>
+                                            </a> --}}
 
                                         </div>
 
@@ -113,7 +112,7 @@
                                 <!-- end card -->
 
                                 <div class="text-end mb-3">
-                                    <button type="submit" class="btn btn-success w-sm">Add</button>
+                                    <button type="submit" class="btn btn-success w-sm">Get Result</button>
                                 </div>
                             </div>
                             <!-- end col -->

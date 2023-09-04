@@ -13,6 +13,10 @@ use App\Services\Admin\v1\Cargo\DistributeCargo\FetchDataService;
 class FetchDataController extends Controller
 {
     private $fetchDataService;
+    private array $consolidatedCargo;
+    private array $remainingCargo;
+    private array $truckCargoInfoAfterLoad;
+    private array $truckBoxContainCapacity;
 
     /**
      * Fetch expected data
@@ -34,8 +38,9 @@ class FetchDataController extends Controller
      * Fetch optimized data
      *
      */
-    public function getOptimizedData($cargo_id)
+    public function getOptimizedData(Request $request)
     {
+        $cargo_id = $request->cargo_id;
         // dd($cargo_id);
         // return response()->json(['status' => 200]);
         // Retrieve cargo information
@@ -48,8 +53,10 @@ class FetchDataController extends Controller
         $trucks = Trucks::all();
 
         // Initialize variables
-        $consolidatedCargo = [];
-        $remainingCargo = [];
+        $this->consolidatedCargo = [];
+        $this->remainingCargo = [];
+        $this->truckCargoInfoAfterLoad = [];
+        $this->truckBoxContainCapacity = [];
 
         // Sort cargo information by box dimensions (descending order) and quantity (descending order)
         usort($cargoInfo, function ($a, $b) {
@@ -63,40 +70,92 @@ class FetchDataController extends Controller
             return $volB - $volA;
         });
 
-        //
-        //
-        // Assign the remaining cargo to other available trucks using the same logic
-        foreach ($remainingCargo as $box) {
+        // Call the function for the initial cargo
+        $this->assignBoxesToTrucks($cargoInfo, $trucks);
+
+        // dump($this->remainingCargo);
+
+        // If there's remaining cargo, call the function again
+        while (!empty($this->remainingCargo)) {
+            dd("Remaining cargo not empty!");
+            $this->assignBoxesToTrucks($this->remainingCargo, $trucks);
+        }
+
+        $result = [
+            'status' => 200,
+            'consolidatedCargo' => $this->consolidatedCargo,
+        ];
+
+        // dump($result);
+
+        // dd("finish for now");
+
+        dd($result);
+
+        // $this->consolidatedCargo now contains cargo boxes, their corresponding trucks, and quantities
+        // $this->remainingCargo has been assigned to other available trucks
+
+        // Return the consolidated cargo and any remaining cargo to the view
+        return response()->json($result);
+        return view('cargo.consolidation', compact('consolidatedCargo'));
+    }
+
+    private function assignBoxesToTrucks($cargoInfo, $trucks)
+    {
+        // Iterate through each cargo box
+        foreach ($cargoInfo as $box) {
+            $this->truckBoxContainCapacity = [];
+            // dump($box);
             $boxDim = explode('*', $box['box_dimension']);
             $boxVolume = $boxDim[0] * $boxDim[1] * $boxDim[2];
             $boxQuantity = $box['quantity'];
+            // dump($boxVolume);
 
+            // Initialize variables for the best-fitting truck and maximum quantity of boxes to load
             $bestFittingTruck = null;
             $maxBoxesToLoad = 0;
-            $bestWastedSpace = null;
 
-            foreach ($trucks as $truck) {
-                $truckVolume = $truck->length * $truck->width * $truck->height;
-                dump($truck->truck_type);
-                dump($truckVolume);
+            // dump($this->truckCargoInfoAfterLoad);
 
-                // Calculate how many boxes can fit in the truck, considering quantity
-                $maxBoxes = floor($truckVolume / $boxVolume);
-                dump($maxBoxes);
+            if (isset($this->truckCargoInfoAfterLoad["remaining_space_on_truck"])) {
+                if ($boxVolume <= $this->truckCargoInfoAfterLoad["remaining_space_on_truck"]) {
+                    $truckVolume = $this->truckCargoInfoAfterLoad["remaining_space_on_truck"];
 
-                $truckBoxContainCapacity[] = [
-                    "truck_type" => $truck->truck_type,
-                    "truck_volume" => $truckVolume,
-                    "box_contain_capacity" => $maxBoxes,
-                ];
+                    // Calculate how many boxes can fit in the truck, considering quantity
+                    $maxBoxes = floor($truckVolume / $boxVolume);
+                    // dump($maxBoxes);
+
+                    $this->truckBoxContainCapacity[] = [
+                        "truck_type" => $this->truckCargoInfoAfterLoad["truck_type"],
+                        "truck_volume" => $truckVolume,
+                        "box_contain_capacity" => $maxBoxes,
+                    ];
+                }
+            } else {
+                foreach ($trucks as $truck) {
+                    $truckVolume = $truck->length * $truck->width * $truck->height;
+                    // dump($truck->truck_type);
+                    // dump($truckVolume);
+
+                    // Calculate how many boxes can fit in the truck, considering quantity
+                    $maxBoxes = floor($truckVolume / $boxVolume);
+                    // dump($maxBoxes);
+
+                    $this->truckBoxContainCapacity[] = [
+                        "truck_type" => $truck->truck_type,
+                        "truck_volume" => $truckVolume,
+                        "box_contain_capacity" => $maxBoxes,
+                    ];
+                }
             }
+            // dump($this->truckBoxContainCapacity);
 
             $minDiff = PHP_INT_MAX;
             $maxDiff = PHP_INT_MAX;
             $closestMin = null;
             $closestMax = null;
 
-            foreach ($truckBoxContainCapacity as $item) {
+            foreach ($this->truckBoxContainCapacity as $item) {
                 $capacity = $item["box_contain_capacity"];
 
                 if ($capacity <= $boxQuantity) {
@@ -105,6 +164,7 @@ class FetchDataController extends Controller
                         $minDiff = $minDiffCurrent;
                         $closestMin = $capacity;
                         $minValueTruckType = $item["truck_type"];
+                        $minValueTruckVolume = $item["truck_volume"];
                         $minValueBoxContainCapacity = $item["box_contain_capacity"];
                     }
                 }
@@ -121,368 +181,276 @@ class FetchDataController extends Controller
                 }
             }
 
-            dump($closestMin);
-            dump($closestMax);
-            // dump($maxValueBoxContainCapacity);
+            // dump($closestMin);
+            // dump($closestMax);
+            // // dump($maxValueBoxContainCapacity);
             // dd("");
 
-            if(!empty($closestMin) && empty($closestMax)) {
+            if (!empty($closestMin) && empty($closestMax)) {
                 $boxContainCapacity = $minValueBoxContainCapacity;
                 $truckType = $minValueTruckType;
-                $remainingSpaceOnTruck = "";
+                $truck_volume = $minValueTruckVolume;
+                // $remainingSpaceOnTruck = "";
+                // $totalLoadedBoxVolume = $boxVolume * $minValueBoxContainCapacity;
                 $remainingboxQuantity = $boxQuantity - $boxContainCapacity;
                 $loadedBoxQuantity = $boxContainCapacity;
-            } elseif(!empty($closestMin) && !empty($closestMax) && $closestMax >= $closestMin) {
+            } elseif ((empty($closestMin) && !empty($closestMax))) {
                 $boxContainCapacity = $maxValueBoxContainCapacity;
                 $truckType = $maxValueTruckType;
-                $remainingSpaceOnTruck = $maxValueTruckVolume - ($boxVolume * $boxQuantity);
+                $truck_volume = $maxValueTruckVolume;
+                // $totalLoadedBoxVolume = $boxVolume * $maxValueBoxContainCapacity;
                 $remainingboxQuantity = 0;
                 $loadedBoxQuantity = $boxQuantity;
+            } elseif (!empty($closestMin) && !empty($closestMax)) {
+                if (($boxQuantity - $closestMin) <= ($closestMax - $boxQuantity)) {
+                    $boxContainCapacity = $minValueBoxContainCapacity;
+                    $truckType = $minValueTruckType;
+                    $truck_volume = $minValueTruckVolume;
+                    $remainingboxQuantity = $boxQuantity - $boxContainCapacity;
+                    $loadedBoxQuantity = $boxContainCapacity;
+                } elseif (($closestMax - $boxQuantity) <= ($boxQuantity - $closestMin)) {
+                    $boxContainCapacity = $maxValueBoxContainCapacity;
+                    $truckType = $maxValueTruckType;
+                    $truck_volume = $maxValueTruckVolume;
+                    $remainingboxQuantity = 0;
+                    $loadedBoxQuantity = $boxQuantity;
+                }
             }
+            // dd("");
 
             $bestFittingTruck = $truckType;
             $maxBoxesToLoad = $boxContainCapacity;
+            // dump($bestFittingTruck);
+            // dump($maxBoxesToLoad);
+            // dump($remainingboxQuantity);
+            // // dump($remainingSpaceOnTruck);
             // dd("");
 
             // If a fitting truck is found, add the boxes to it; otherwise, save the boxes for later
             if ($bestFittingTruck) {
-                $consolidatedCargo[] = [
+                $this->consolidatedCargo[] = [
                     'truck_type' => $bestFittingTruck,
-                    'box_dimension' => $box['box_dimension'],
+                    'truck_volume' => $truck_volume,
                     'can_load_max_box_quantity' => $maxBoxesToLoad,
+                    'box_dimension' => $box['box_dimension'],
+                    'single_box_volume' => $boxVolume,
+                    'total_box_quantity' => $boxQuantity,
                     'loaded_box_quantity' => $loadedBoxQuantity,
                     'remaining_box_quantity' => $remainingboxQuantity,
-                    'remaining_space_on_truck' => $remainingSpaceOnTruck,
+                    'loaded_box_volume' => $boxVolume * $loadedBoxQuantity,
+                    'remaining_space_on_truck' => $truck_volume - ($boxVolume * $loadedBoxQuantity),
                 ];
 
-                if($remainingboxQuantity >= 0) {
+                if ($remainingboxQuantity >= 0) {
                     // Reduce the box quantity by the loaded quantity
                     $box['quantity'] -= $loadedBoxQuantity;
                 }
 
+                // dd($box['quantity']);
+
                 // If there are remaining boxes of this type, save them for later
                 if ($box['quantity'] > 0) {
-                    $remainingCargo[] = $box;
+                    $this->remainingCargo = [];
+                    $this->remainingCargo[] = $box;
+                    $this->truckCargoInfoAfterLoad = [
+                        "box_dimension" => $box['box_dimension'],
+                        "box_dimension_volume" => $boxVolume,
+                        "quantity" => $box['quantity'],
+                        "truck_type" => $bestFittingTruck,
+                        "remaining_space_on_truck" => $truck_volume - ($boxVolume * $loadedBoxQuantity),
+                    ];
+
+                    // If there's remaining cargo, call the function again
+                    while (!empty($this->remainingCargo)) {
+                        // dd("Remaining cargo not empty!");
+                        $this->assignRemainingCargoBoxesToTrucks($this->remainingCargo, $trucks);
+                    }
                 } else {
-                    $remainingCargo = [];
+                    $this->remainingCargo = [];
+                    $this->truckCargoInfoAfterLoad = [];
                 }
             } else {
-                $remainingCargo[] = [
+                $this->remainingCargo[] = [
                     'box_dimension' => $box['box_dimension'],
                     'quantity' => $boxQuantity,
                 ];
             }
-            dump($consolidatedCargo);
-            dump($remainingCargo);
+            // dump($this->consolidatedCargo);
+            // dump($this->remainingCargo);
         }
+    }
 
-        // Create a function to assign boxes to trucks
-        $assignBoxesToTrucks = function ($cargoInfo, $trucks) {
-            $truckBoxContainCapacity = [];
-            // Iterate through each cargo box
-            foreach ($cargoInfo as $box) {
-                dump($box);
-                $boxDim = explode('*', $box['box_dimension']);
-                $boxVolume = $boxDim[0] * $boxDim[1] * $boxDim[2];
-                $boxQuantity = $box['quantity'];
-                dump($boxVolume);
+    private function assignRemainingCargoBoxesToTrucks($cargoInfo, $trucks)
+    {
+        // Iterate through each cargo box
+        foreach ($cargoInfo as $box) {
+            $this->truckBoxContainCapacity = [];
+            // dump($box);
+            $boxDim = explode('*', $box['box_dimension']);
+            $boxVolume = $boxDim[0] * $boxDim[1] * $boxDim[2];
+            $boxQuantity = $box['quantity'];
+            // dump($boxVolume);
 
-                // Initialize variables for the best-fitting truck and maximum quantity of boxes to load
-                $bestFittingTruck = null;
-                $maxBoxesToLoad = 0;
+            // Initialize variables for the best-fitting truck and maximum quantity of boxes to load
+            $bestFittingTruck = null;
+            $maxBoxesToLoad = 0;
 
+            // dump($this->truckCargoInfoAfterLoad);
+
+            if ($boxVolume <= $this->truckCargoInfoAfterLoad["remaining_space_on_truck"]) {
+                $truckVolume = $this->truckCargoInfoAfterLoad["remaining_space_on_truck"];
+
+                // Calculate how many boxes can fit in the truck, considering quantity
+                $maxBoxes = floor($truckVolume / $boxVolume);
+                // dump($maxBoxes);
+
+                $this->truckBoxContainCapacity[] = [
+                    "truck_type" => $this->truckCargoInfoAfterLoad["truck_type"],
+                    "truck_volume" => $truckVolume,
+                    "box_contain_capacity" => $maxBoxes,
+                ];
+            } else {
                 foreach ($trucks as $truck) {
                     $truckVolume = $truck->length * $truck->width * $truck->height;
-                    dump($truck->truck_type);
-                    dump($truckVolume);
+                    // dump($truck->truck_type);
+                    // dump($truckVolume);
 
                     // Calculate how many boxes can fit in the truck, considering quantity
                     $maxBoxes = floor($truckVolume / $boxVolume);
-                    dump($maxBoxes);
+                    // dump($maxBoxes);
 
-                    $truckBoxContainCapacity[] = [
+                    $this->truckBoxContainCapacity[] = [
                         "truck_type" => $truck->truck_type,
                         "truck_volume" => $truckVolume,
                         "box_contain_capacity" => $maxBoxes,
                     ];
                 }
+            }
 
+            // dump($this->truckBoxContainCapacity);
 
-                $minDiff = PHP_INT_MAX;
-                $maxDiff = PHP_INT_MAX;
-                $closestMin = null;
-                $closestMax = null;
+            $minDiff = PHP_INT_MAX;
+            $maxDiff = PHP_INT_MAX;
+            $closestMin = null;
+            $closestMax = null;
 
-                foreach ($truckBoxContainCapacity as $item) {
-                    $capacity = $item["box_contain_capacity"];
+            foreach ($this->truckBoxContainCapacity as $item) {
+                $capacity = $item["box_contain_capacity"];
 
-                    if ($capacity <= $boxQuantity) {
-                        $minDiffCurrent = $boxQuantity - $capacity;
-                        if ($minDiffCurrent < $minDiff) {
-                            $minDiff = $minDiffCurrent;
-                            $closestMin = $capacity;
-                            $minValueTruckType = $item["truck_type"];
-                            $minValueBoxContainCapacity = $item["box_contain_capacity"];
-                        }
-                    }
-
-                    if ($capacity >= $boxQuantity) {
-                        $maxDiffCurrent = $capacity - $boxQuantity;
-                        if ($maxDiffCurrent < $maxDiff) {
-                            $maxDiff = $maxDiffCurrent;
-                            $closestMax = $capacity;
-                            $maxValueTruckType = $item["truck_type"];
-                            $maxValueTruckVolume = $item["truck_volume"];
-                            $maxValueBoxContainCapacity = $item["box_contain_capacity"];
-                        }
+                if ($capacity <= $boxQuantity) {
+                    $minDiffCurrent = $boxQuantity - $capacity;
+                    if ($minDiffCurrent < $minDiff) {
+                        $minDiff = $minDiffCurrent;
+                        $closestMin = $capacity;
+                        $minValueTruckType = $item["truck_type"];
+                        $minValueTruckVolume = $item["truck_volume"];
+                        $minValueBoxContainCapacity = $item["box_contain_capacity"];
                     }
                 }
 
-                dump($closestMin);
-                dump($closestMax);
-                // dump($maxValueBoxContainCapacity);
-                // dd("");
+                if ($capacity >= $boxQuantity) {
+                    $maxDiffCurrent = $capacity - $boxQuantity;
+                    if ($maxDiffCurrent < $maxDiff) {
+                        $maxDiff = $maxDiffCurrent;
+                        $closestMax = $capacity;
+                        $maxValueTruckType = $item["truck_type"];
+                        $maxValueTruckVolume = $item["truck_volume"];
+                        $maxValueBoxContainCapacity = $item["box_contain_capacity"];
+                    }
+                }
+            }
 
-                if(!empty($closestMin) && empty($closestMax)) {
+            // dump($closestMin);
+            // dump($closestMax);
+
+            if (!empty($closestMin) && empty($closestMax)) {
+                $boxContainCapacity = $minValueBoxContainCapacity;
+                $truckType = $minValueTruckType;
+                $truck_volume = $minValueTruckVolume;
+                $remainingboxQuantity = $boxQuantity - $boxContainCapacity;
+                $loadedBoxQuantity = $boxContainCapacity;
+            } elseif ((empty($closestMin) && !empty($closestMax))) {
+                $boxContainCapacity = $maxValueBoxContainCapacity;
+                $truckType = $maxValueTruckType;
+                $truck_volume = $maxValueTruckVolume;
+                $remainingboxQuantity = 0;
+                $loadedBoxQuantity = $boxQuantity;
+            } elseif (!empty($closestMin) && !empty($closestMax)) {
+                if (($boxQuantity - $closestMin) <= ($closestMax - $boxQuantity)) {
                     $boxContainCapacity = $minValueBoxContainCapacity;
                     $truckType = $minValueTruckType;
-                    $remainingSpaceOnTruck = "";
+                    $truck_volume = $minValueTruckVolume;
                     $remainingboxQuantity = $boxQuantity - $boxContainCapacity;
                     $loadedBoxQuantity = $boxContainCapacity;
-                } elseif(!empty($closestMin) && !empty($closestMax) && $closestMax >= $closestMin) {
+                } elseif (($closestMax - $boxQuantity) <= ($boxQuantity - $closestMin)) {
                     $boxContainCapacity = $maxValueBoxContainCapacity;
                     $truckType = $maxValueTruckType;
-                    $remainingSpaceOnTruck = $maxValueTruckVolume - ($boxVolume * $boxQuantity);
+                    $truck_volume = $maxValueTruckVolume;
                     $remainingboxQuantity = 0;
                     $loadedBoxQuantity = $boxQuantity;
                 }
-                // dd("");
+            }
+            // dd("");
 
-                $bestFittingTruck = $truckType;
-                $maxBoxesToLoad = $boxContainCapacity;
-                dump($bestFittingTruck);
-                dump($maxBoxesToLoad);
-                dump($remainingboxQuantity);
-                dump($remainingSpaceOnTruck);
-                // dd("");
+            $bestFittingTruck = $truckType;
+            $maxBoxesToLoad = $boxContainCapacity;
+            // dump($bestFittingTruck);
+            // dump($maxBoxesToLoad);
+            // dump($remainingboxQuantity);
+            // // dump($remainingSpaceOnTruck);
+            // dd("");
 
-                // If a fitting truck is found, add the boxes to it; otherwise, save the boxes for later
-                if ($bestFittingTruck) {
-                    $consolidatedCargo[] = [
-                        'truck_type' => $bestFittingTruck,
-                        'box_dimension' => $box['box_dimension'],
-                        'can_load_max_box_quantity' => $maxBoxesToLoad,
-                        'loaded_box_quantity' => $loadedBoxQuantity,
-                        'remaining_box_quantity' => $remainingboxQuantity,
-                        'remaining_space_on_truck' => $remainingSpaceOnTruck,
+            // If a fitting truck is found, add the boxes to it; otherwise, save the boxes for later
+            if ($bestFittingTruck) {
+                $this->consolidatedCargo[] = [
+                    'truck_type' => $bestFittingTruck,
+                    'truck_volume' => $truck_volume,
+                    'can_load_max_box_quantity' => $maxBoxesToLoad,
+                    'box_dimension' => $box['box_dimension'],
+                    'single_box_volume' => $boxVolume,
+                    'total_box_quantity' => $boxQuantity,
+                    'loaded_box_quantity' => $loadedBoxQuantity,
+                    'remaining_box_quantity' => $remainingboxQuantity,
+                    'loaded_box_volume' => $boxVolume * $loadedBoxQuantity,
+                    'remaining_space_on_truck' => $truck_volume - ($boxVolume * $loadedBoxQuantity),
+                ];
+
+                if ($remainingboxQuantity >= 0) {
+                    // Reduce the box quantity by the loaded quantity
+                    $box['quantity'] -= $loadedBoxQuantity;
+                }
+
+                // dd($box['quantity']);
+
+                // If there are remaining boxes of this type, save them for later
+                if ($box['quantity'] > 0) {
+                    $this->remainingCargo = [];
+                    $this->remainingCargo[] = $box;
+                    $this->truckCargoInfoAfterLoad = [
+                        "box_dimension" => $box['box_dimension'],
+                        "box_dimension_volume" => $boxVolume,
+                        "quantity" => $box['quantity'],
+                        "truck_type" => $bestFittingTruck,
+                        "remaining_space_on_truck" => $truck_volume - ($boxVolume * $loadedBoxQuantity),
                     ];
-
-                    if($remainingboxQuantity >= 0) {
-                        // Reduce the box quantity by the loaded quantity
-                        $box['quantity'] -= $loadedBoxQuantity;
-                    }
-
-                    // dd($box['quantity']);
-
-                    // If there are remaining boxes of this type, save them for later
-                    if ($box['quantity'] > 0) {
-                        $remainingCargo[] = $box;
-                    } else {
-                        $remainingCargo = [];
-                    }
                 } else {
-                    $remainingCargo[] = [
-                        'box_dimension' => $box['box_dimension'],
-                        'quantity' => $boxQuantity,
+                    $this->remainingCargo = [];
+                    $this->truckCargoInfoAfterLoad = [
+                        "box_dimension" => "",
+                        "box_dimension_volume" => "",
+                        "quantity" => "",
+                        "truck_type" => $bestFittingTruck,
+                        "remaining_space_on_truck" => $truck_volume - ($boxVolume * $loadedBoxQuantity),
                     ];
                 }
-                dump($consolidatedCargo);
+            } else {
+                $this->remainingCargo[] = [
+                    'box_dimension' => $box['box_dimension'],
+                    'quantity' => $boxQuantity,
+                ];
             }
-            dump($remainingCargo);
-        };
-
-        // Call the function for the initial cargo
-        $assignBoxesToTrucks($cargoInfo, $trucks);
-
-        // If there's remaining cargo, call the function again
-        if (!empty($remainingCargo)) {
-            $assignBoxesToTrucks($remainingCargo, $trucks);
+            // dump($this->consolidatedCargo);
+            // dump($this->remainingCargo);
         }
-
-        // Iterate through each cargo box
-        // foreach ($cargoInfo as $box) {
-        //     dump($box);
-        //     $boxDim = explode('*', $box['box_dimension']);
-        //     $boxVolume = $boxDim[0] * $boxDim[1] * $boxDim[2];
-        //     $boxQuantity = $box['quantity'];
-        //     dump($boxQuantity);
-
-        //     // Initialize variables for this box
-        //     $remainingQuantity = $boxQuantity;
-
-        //     // Find the best-fitting truck
-        //     while ($remainingQuantity > 0) {
-        //         $bestFittingTruck = null;
-        //         $bestWastedSpace = null;
-
-        //         foreach ($trucks as $truck) {
-        //             $truckVolume = $truck->length * $truck->width * $truck->height;
-        //             dump($truck->truck_type);
-        //             dump($truckVolume);
-
-        //             // Calculate how many boxes can fit in the truck
-        //             $maxBoxes = floor($truckVolume / $boxVolume);
-        //             dump($maxBoxes);
-
-        //             if ($maxBoxes > 0) {
-        //                 // Calculate wasted space
-        //                 $wastedSpace = $truckVolume - ($maxBoxes * $boxVolume);
-
-        //                 // Check if this truck is the best fit so far
-        //                 if ($bestFittingTruck === null || $wastedSpace < $bestWastedSpace) {
-        //                     $bestFittingTruck = $truck;
-        //                     $bestWastedSpace = $wastedSpace;
-        //                 }
-        //             }
-        //         }
-
-        //         // If a fitting truck is found, add the box to it
-        //         if ($bestFittingTruck) {
-        //             $consolidatedCargo[] = [
-        //                 'truck_type' => $bestFittingTruck->truck_type,
-        //                 'box_dimension' => $box['box_dimension'],
-        //                 'quantity' => min($maxBoxes, $remainingQuantity),
-        //             ];
-        //             $remainingQuantity -= min($maxBoxes, $remainingQuantity);
-        //             dump($remainingQuantity);
-        //         } else {
-        //             // No suitable truck found, save the remaining quantity for later
-        //             $remainingCargo[] = [
-        //                 'box_dimension' => $box['box_dimension'],
-        //                 'quantity' => $remainingQuantity,
-        //             ];
-        //             break; // Exit the loop
-        //         }
-        //     }
-
-        //     dump($consolidatedCargo);
-        // }
-
-
-
-        // Iterate through each cargo box
-        // foreach ($cargoInfo as $box) {
-        //     dump($box);
-        //     $boxDim = explode('*', $box['box_dimension']);
-        //     $boxVolume = $boxDim[0] * $boxDim[1] * $boxDim[2];
-        //     $boxQuantity = $box['quantity'];
-        //     dump($boxVolume);
-
-        //     // Find the best-fitting truck
-        //     $bestFittingTruck = null;
-        //     $bestWastedSpace = null;
-        //     $bestRemainingSpace = null;
-
-        //     foreach ($trucks as $truck) {
-        //         $truckVolume = $truck->length * $truck->width * $truck->height;
-        //         dump($truck->truck_type);
-        //         dump($truckVolume);
-
-        //         // Calculate how many boxes can fit in the truck
-        //         $maxBoxes = floor($truckVolume / $boxVolume);
-        //         // $quantityInTruck = min($maxBoxes, $boxQuantity);
-        //         dump($maxBoxes);
-
-        //         if ($maxBoxes > 0) {
-        //             // Calculate wasted space considering quantity
-        //             $totalWastedSpace = $truckVolume - ($maxBoxes * $boxVolume);
-        //             $wastedSpacePerBox = $totalWastedSpace / $maxBoxes;
-        //             dump($wastedSpacePerBox);
-
-        //             // Check if this truck is the best fit so far
-        //             if ($bestFittingTruck === null || $wastedSpacePerBox < $bestWastedSpace) {
-        //                 $bestFittingTruck = $truck;
-        //                 $bestWastedSpace = $wastedSpacePerBox;
-        //             }
-        //         }
-
-        //         // if ($quantityInTruck > 0) {
-        //         //     // Calculate wasted space for the quantity in this truck
-        //         //     $wastedSpace = $truckVolume - ($quantityInTruck * $boxVolume);
-
-        //         //     // Check if this truck is the best fit so far
-        //         //     if ($bestFittingTruck === null || $wastedSpace < $bestWastedSpace) {
-        //         //         $bestFittingTruck = $truck;
-        //         //         $bestWastedSpace = $wastedSpace;
-        //         //     }
-        //         // }
-
-        //         // if ($maxBoxes > 0 && $maxBoxes >= $boxQuantity) {
-        //         //     // Calculate wasted space
-        //         //     $wastedSpace = $truckVolume - ($maxBoxes * $boxVolume);
-        //         //     dump($wastedSpace);
-        //         //     dump($bestWastedSpace);
-
-        //         //     // Check if this truck is the best fit so far
-        //         //     if ($bestFittingTruck === null || $wastedSpace < $bestWastedSpace) {
-        //         //         $bestFittingTruck = $truck;
-        //         //         $bestWastedSpace = $wastedSpace;
-        //         //     }
-        //         // }
-        //     }
-
-        //     // // If a fitting truck is found, add the quantity of boxes to it; otherwise, save the box for later
-        //     // if ($bestFittingTruck) {
-        //     //     $consolidatedCargo[] = [
-        //     //         'truck_type' => $bestFittingTruck->truck_type,
-        //     //         'box_dimension' => $box['box_dimension'],
-        //     //         'quantity' => $quantityInTruck,
-        //     //     ];
-
-        //     //     // Update remaining quantity for this box
-        //     //     $boxQuantity -= $quantityInTruck;
-        //     // }
-
-        //     // // If there's remaining quantity for this box, add it to remaining cargo
-        //     // if ($boxQuantity > 0) {
-        //     //     $remainingCargo[] = [
-        //     //         'box_dimension' => $box['box_dimension'],
-        //     //         'quantity' => $boxQuantity,
-        //     //     ];
-        //     // }
-
-        //     // If a fitting truck is found, add the box to it; otherwise, save the box for later
-        //     if ($bestFittingTruck) {
-        //         $consolidatedCargo[] = [
-        //             'truck_type' => $bestFittingTruck->truck_type,
-        //             'box_dimension' => $box['box_dimension'],
-        //             'quantity' => $boxQuantity,
-        //         ];
-        //     } else {
-        //         // $remainingCargo[] = [
-        //         //     'box_dimension' => $box['box_dimension'],
-        //         //     'quantity' => $boxQuantity,
-        //         // ];
-        //     }
-        //     dump($consolidatedCargo);
-        //     dump($remainingCargo);
-        // }
-
-
-        dd("finish for now");
-
-        $result = [
-            'status' => 200,
-            'consolidatedCargo' => $consolidatedCargo,
-        ];
-
-        // dd($result);
-
-        // $consolidatedCargo now contains cargo boxes, their corresponding trucks, and quantities
-        // $remainingCargo has been assigned to other available trucks
-
-        // Return the consolidated cargo and any remaining cargo to the view
-        return response()->json($result);
-        return view('cargo.consolidation', compact('consolidatedCargo'));
     }
 }
