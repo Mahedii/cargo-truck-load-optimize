@@ -5,8 +5,8 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\v1\Truck\{AddDataController as TruckListAddDataController, FetchDataController as TruckListFetchDataController};
-use App\Http\Controllers\Admin\v1\Cargo\CargoList\{AddDataController as CargoListAddDataController, FetchDataController as CargoListFetchDataController};
-use App\Http\Controllers\Admin\v1\Cargo\CargoInfo\{AddDataController as CargoInfoAddDataController, FetchDataController as CargoInfoFetchDataController};
+use App\Http\Controllers\Admin\v1\Cargo\CargoList\{AddDataController as CargoListAddDataController, FetchDataController as CargoListFetchDataController, DeleteDataController as CargoListDeleteDataController};
+use App\Http\Controllers\Admin\v1\Cargo\CargoInfo\{AddDataController as CargoInfoAddDataController, FetchDataController as CargoInfoFetchDataController, UpdateDataController as CargoInfoUpdateDataController, DeleteDataController as CargoInfoDeleteDataController};
 use App\Http\Controllers\Admin\v1\Cargo\DistributeCargo\{AddDataController as DistributeCargoAddDataController, FetchDataController as DistributeCargoFetchDataController};
 use App\Http\Controllers\Admin\v1\VisitorInfo\VisitorUserController;
 use App\Http\Controllers\Admin\v1\User\UserProfile\{UpdateDataController as UserProfileUpdateDataController, FetchDataController as UserProfileFetchDataController};
@@ -48,10 +48,13 @@ Route::group(['middleware' => ['auth']], function () {
         Route::get('/list/data', [CargoListFetchDataController::class, 'index'])->name('cargoList.load.allData');
         Route::post('/list/add', CargoListAddDataController::class)->name('cargoList.addData');
         // Route::get('/list/load/{slug}', [CargoListFetchDataController::class, 'fetchData'])->name('cargoList.load.selectedData');
+        Route::get('/list/delete/{slug}', CargoListDeleteDataController::class)->name('cargoList.deleteData');
 
         Route::get('/info/data', [CargoInfoFetchDataController::class, 'index'])->name('cargoInfo.load.allData');
         Route::post('/info/add', CargoInfoAddDataController::class)->name('cargoInfo.addData');
-        Route::get('/info/fetch/{cargo_id}', [CargoInfoFetchDataController::class, 'fetchData'])->name('cargoInfo.load.selectedData');
+        Route::get('/info/fetch/{slug}', [CargoInfoFetchDataController::class, 'fetchData'])->name('cargoInfo.load.selectedData');
+        Route::post('/info/update', CargoInfoUpdateDataController::class)->name('cargoInfo.updateData');
+        Route::get('/info/delete/{slug}', CargoInfoDeleteDataController::class)->name('cargoInfo.deleteData');
 
         Route::get('/distribute/data', [DistributeCargoFetchDataController::class, 'index'])->name('distributeCargo.load.allData');
         Route::post('/distribute/add', DistributeCargoAddDataController::class)->name('distributeCargo.addData');

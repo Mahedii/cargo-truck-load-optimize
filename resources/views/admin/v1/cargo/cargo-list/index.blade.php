@@ -136,14 +136,14 @@
                                                                     <i class="ri-pencil-fill align-bottom me-2 text-muted"></i>
                                                                     Edit
                                                                 </a>
-                                                            </li>
+                                                            </li> --}}
 
                                                             <li>
                                                                 <a href="{{ route('cargoList.deleteData', $data->slug) }}" class="dropdown-item delete-item-btn" onclick="return confirm('Are you sure you want to delete this?');">
                                                                     <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i>
                                                                     Delete
                                                                 </a>
-                                                            </li> --}}
+                                                            </li>
 
                                                         </ul>
 

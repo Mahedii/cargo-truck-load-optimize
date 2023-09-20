@@ -64,7 +64,7 @@ class AddDataService
             'creator' => Auth::user()->id
         ]);
 
-        if($response) {
+        if ($response) {
             $result = ['status' => 200];
         } else {
             $result = ['status' => 500];
@@ -80,23 +80,19 @@ class AddDataService
      */
     public static function generateSlug($name): string
     {
-        $slug=Str::slug($name);
+        $slug = Str::slug($name);
 
-        if (Cargo::where('slug',Str::slug($name))->exists()) {
-
+        if (Cargo::where('slug', Str::slug($name))->exists()) {
             $original = $slug;
 
             $count = 1;
 
-            while(Cargo::where('slug',$slug)->exists()) {
-
+            while (Cargo::where('slug', $slug)->exists()) {
                 $slug = "{$original}-" . $count++;
             }
 
             return $slug;
-
         }
         return $slug;
     }
-
 }

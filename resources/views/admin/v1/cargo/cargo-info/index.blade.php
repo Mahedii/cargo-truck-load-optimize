@@ -186,14 +186,19 @@
                                                                     <i class="ri-pencil-fill align-bottom me-2 text-muted"></i>
                                                                     Edit
                                                                 </a>
-                                                            </li>
+                                                            </li> --}}
+
+                                                            <a href="javascript:void(0);" data-slug="{{$data->slug}}" class="dropdown-item edit-item-btn ajax-edit-data-btn">
+                                                                <i class="ri-pencil-fill align-bottom me-2 text-muted"></i>
+                                                                Edit
+                                                            </a>
 
                                                             <li>
                                                                 <a href="{{ route('cargoInfo.deleteData', $data->slug) }}" class="dropdown-item delete-item-btn" onclick="return confirm('Are you sure you want to delete this?');">
                                                                     <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i>
                                                                     Delete
                                                                 </a>
-                                                            </li> --}}
+                                                            </li>
 
                                                         </ul>
 
@@ -215,5 +220,64 @@
             <!-- container-fluid -->
         </div>
         <!-- End Page-content -->
+
+        <!-- Edit Modal -->
+        <div id="zoomInEditModal" class="modal fade zoomIn" tabindex="-1" aria-labelledby="zoomInEditModalLabel" aria-hidden="true" style="display: none;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="zoomInEditModalLabel">Update Cargo Info</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="{{ route('cargoInfo.updateData') }}" enctype="multipart/form-data" id="cargoInfoUpdateForm">
+                            @csrf
+                            <input type="hidden" class="form-control" id="slug" name="slug">
+                            <div class="row g-3">
+                                <div class="col-xxl-12">
+                                    <div class="">
+                                        <label for="cargo_id" class="form-label">Cargo <span class="text-danger">*</span></label>
+                                        <select class="js-example-basic-single" id="box-cargo-id" name="cargo_id">
+                                            <option>Select Cargo</option>
+                                            @foreach($cargoListData as $data)
+                                                <option value="{{ $data->id }}">{{ $data->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                </div>
+                                <div class="col-xxl-6">
+                                    <div>
+                                        <label for="length" class="form-label">Box Dimension <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="box-dimension" name="box_dimension">
+                                    </div>
+                                </div>
+                                <div class="col-xxl-6">
+                                    <div>
+                                        <label for="icon_name" class="form-label">Quantity</label>
+                                        <input type="text" class="form-control ajax-validation-input" id="box-quantity" name="quantity">
+                                    </div>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="hstack gap-2 justify-content-end">
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                                        <button type="submit" class="btn btn-primary ajax-submit">
+                                            <div class="submit-btn-text">Update</div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    {{-- <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary ">Save Changes</button>
+                    </div> --}}
+
+                </div>
+            </div>
+        </div>
+
+        @include('admin.v1.cargo.cargo-info.ajax.index')
 
     @endsection

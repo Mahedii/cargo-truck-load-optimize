@@ -5,13 +5,11 @@ namespace App\Services\Admin\v1\Cargo\CargoInfo;
 use Auth;
 use Validator;
 use Carbon\Carbon;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\Trucks\Trucks;
 use App\Models\Cargo\CargoInformation;
 
-class AddDataService
+class UpdateDataService
 {
     /**
      * Client form request container
@@ -29,7 +27,7 @@ class AddDataService
     }
 
     /**
-     * Get response for adding data
+     * Get update data response
      *
      * @return array
      */
@@ -38,9 +36,10 @@ class AddDataService
         // $validated = $this->validateData($this->request);
 
         // if ($validated) {
-        //     $response = $this->cargoInfoAddData($this->request);
+        //     $response = $this->cargoInfoUpdateData($this->request);
         // }
-        $response = $this->cargoInfoAddData($this->request);
+
+        $response = $this->cargoInfoUpdateData($this->request);
 
         if ($response) {
             $result = ['status' => 200];
@@ -52,20 +51,37 @@ class AddDataService
     }
 
     /**
-     * add data to database
+     * Validate data
+     *
+     * @param object $request
+     */
+    private function validateData($request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string:max:50',
+            'singleFile' => 'mimes:jpg,png,jpeg,gif,svg|max:5120',
+        ], [
+            'title.required' => 'Please provide a title',
+            'title.string' => 'Title must be type of string',
+            'title.max' => 'Title cannot exceed :max characters',
+            'singleFile.max' => 'Image size cannot exceed :max',
+        ]);
+
+        return $validated;
+    }
+
+    /**
+     * Update selected data
      *
      * @return array
      */
-    public function cargoInfoAddData($request): array
+    private function cargoInfoUpdateData($request): array
     {
-        $slug = $this->generateSlug("cargo-" . $request->cargo_id . "box");
-        $box_dimension = $request->length . "*" . $request->width . "*" . $request->height;
-        $response = CargoInformation::create([
+        $response = CargoInformation::where('slug', $request->slug)->update([
             'cargo_id' => $request->cargo_id,
-            'box_dimension' => $box_dimension,
+            'box_dimension' => $request->box_dimension,
             'quantity' => $request->quantity,
-            'slug' => $slug,
-            'creator' => Auth::user()->id
+            'updated_at' => Carbon::now()
         ]);
 
         if ($response) {
@@ -75,28 +91,5 @@ class AddDataService
         }
 
         return $result;
-    }
-
-    /**
-     * generate slug
-     *
-     * @return string
-     */
-    public static function generateSlug($name): string
-    {
-        $slug = Str::slug($name);
-
-        if (CargoInformation::where('slug', Str::slug($name))->exists()) {
-            $original = $slug;
-
-            $count = 1;
-
-            while (CargoInformation::where('slug', $slug)->exists()) {
-                $slug = "{$original}-" . $count++;
-            }
-
-            return $slug;
-        }
-        return $slug;
     }
 }
