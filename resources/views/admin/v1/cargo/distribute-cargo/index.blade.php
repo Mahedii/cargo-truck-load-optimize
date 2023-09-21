@@ -66,7 +66,7 @@
                                             <div class="col-md-12">
                                                 <div class="mb-3">
                                                     <select name="cargo_id" id="cargo_id" class="js-example-basic-single cargo_id">
-                                                        <option>Select Cargo</option>
+                                                        <option selected value="">Select Cargo</option>
                                                         @foreach($cargoListData as $data)
                                                             <option value="{{ $data->id }}">{{ $data->name }}</option>
                                                         @endforeach
