@@ -32,7 +32,23 @@ class FetchDataController extends Controller
      * Fetch selected data
      *
      */
-    public function fetchData($cargo_id)
+    public function fetchBoxData($slug)
+    {
+        try {
+            $fetchedData = CargoInformation::where('slug', $slug)->get();
+            $count = CargoInformation::where('slug', $slug)->count();
+            $result = [
+                'status' => 200,
+                'count' => $count,
+                'fetchedData' => $fetchedData,
+            ];
+            return response()->json($result);
+        } catch (Exception $e) {
+            dd($e->getMessage());
+        }
+    }
+
+    public function fetchCargoData($cargo_id)
     {
         // dd($cargo_id);
         // return response()->json(['status' => 200]);

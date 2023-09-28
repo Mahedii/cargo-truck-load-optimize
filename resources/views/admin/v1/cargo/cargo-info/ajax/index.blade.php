@@ -29,7 +29,7 @@
         $(document).on('click', '.ajax-edit-data-btn', function () {
             var slug = $(this).data('slug');
             var id = $(this).closest('tr').data('id');
-            var url = '/cargo/info/fetch/'+slug;
+            var url = '/cargo/box/info/fetch/'+slug;
             // alert(url);
 
             $.ajax({
@@ -38,6 +38,7 @@
                 dataType:'json',
                 success:function(data){
                     var tableData = data.fetchedData;
+                    // console.log(tableData);
                     tableData.forEach(function(row) {
                         var $option = $("#box-cargo-id").find("option[value='" + row.cargo_id + "']");
 

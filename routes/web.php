@@ -89,7 +89,8 @@ Route::group(['middleware' => ['auth']], function () {
 
         Route::get('/info/data', [CargoInfoFetchDataController::class, 'index'])->name('cargoInfo.load.allData');
         Route::post('/info/add', CargoInfoAddDataController::class)->name('cargoInfo.addData');
-        Route::get('/info/fetch/{slug}', [CargoInfoFetchDataController::class, 'fetchData'])->name('cargoInfo.load.selectedData');
+        Route::get('/info/fetch/{cargo_id}', [CargoInfoFetchDataController::class, 'fetchCargoData'])->name('cargoInfo.load.selectedData');
+        Route::get('/box/info/fetch/{slug}', [CargoInfoFetchDataController::class, 'fetchBoxData'])->name('cargoBoxInfo.load.selectedData');
         Route::post('/info/update', CargoInfoUpdateDataController::class)->name('cargoInfo.updateData');
         Route::get('/info/delete/{slug}', CargoInfoDeleteDataController::class)->name('cargoInfo.deleteData');
 

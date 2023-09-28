@@ -15,7 +15,10 @@ class FetchDataService
     public function getDefaultData(): array
     {
         $cargoListData = Cargo::select("*")->get();
-        $cargoInfoData = CargoInformation::all();
+        $cargoInfoData = CargoInformation::select('cargo_information.*', 'cargos.name as cargo_name')
+        ->join('cargos', 'cargos.id', '=', 'cargo_information.cargo_id')
+        ->get();
+
 
         $componentArray = [];
 

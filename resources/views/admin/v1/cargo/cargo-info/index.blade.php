@@ -169,7 +169,7 @@
 
                                             <tr data-id="{{ $data->id }}" class="cargo-box-{{ $data->id }}">
                                                 <td>{{ ++$key }}</td>
-                                                <td>{{ $data->cargo_id }}</td>
+                                                <td>{{ $data->cargo_name }}</td>
                                                 <td>{{ $data->box_dimension }}</td>
                                                 <td>{{ $data->quantity }}</td>
                                                 <td>{{ Carbon\Carbon::parse($data->created_at)->diffForHumans() }}</td>
