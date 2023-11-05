@@ -96,7 +96,7 @@ Route::group(['middleware' => ['auth']], function () {
 
         Route::get('/distribute/data', [DistributeCargoFetchDataController::class, 'index'])->name('distributeCargo.load.allData');
         Route::post('/distribute/add', DistributeCargoAddDataController::class)->name('distributeCargo.addData');
-        Route::post('/distribute/get/optimized-data', [DistributeCargoFetchDataController::class, 'getOptimizedData'])->name('distributeCargo.get.optimizedData');
+        Route::post('/distribute/get/optimized-data', [DistributeCargoFetchDataController::class, 'getData'])->name('distributeCargo.get.optimizedData');
         // Route::get('/distribute/{cargo_id}/optimize', [DistributeCargoFetchDataController::class, 'getOptimizedData'])->name('distributeCargo.fetch.optimizedData');
     });
 
