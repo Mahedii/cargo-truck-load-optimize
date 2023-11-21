@@ -809,7 +809,7 @@ class FetchDataController extends Controller
                         $filteredTruckInfo = $this->getFilteredTruckData($uniqueTrucksArray, $selectedTempTruck['box_dimension'], $partiallyLoadedTruckBoxQuantity, $cargokey);
                         // dd($filteredTruckInfo);
                         // $this->getFilteredTruckData1($filteredTruckInfo, $cargokey);
-                        $filteredTruckInfoKey = $this->getFilteredTruckDataKey($uniqueTrucksArray, $filteredTruckInfo, $box['box_dimension']);
+                        $filteredTruckInfoKey = $this->getFilteredTruckDataKey($uniqueTrucksArray, $filteredTruckInfo, $box['box_dimension'], true);
                         $finalTrucks[] = $filteredTruckInfoKey;
                         // dd($finalTrucks);
 
@@ -1092,6 +1092,7 @@ class FetchDataController extends Controller
         $maxFilledBoxQuantity = $maxFilledBoxTruckKey = null;
         foreach ($filteredTruckInfo as $tempKey => $item) {
             $filledBoxQuantity = $item['individual_truck'][0]['total_filled_box_quantity'] + $item['other_box_load_info'][0]['total_filled_box_quantity'];
+            // dump($filledBoxQuantity);
             if ($filledBoxQuantity >= $maxFilledBoxQuantity) {
                 $maxFilledBoxQuantity = $filledBoxQuantity;
                 $maxFilledBoxTruckKey = $tempKey;
@@ -1492,7 +1493,7 @@ class FetchDataController extends Controller
                 for ($i = 1; $i <= $truckInfo[$count]['total_truck']; $i++) {
                     if ($i == $truckInfo[$count]['total_truck']) {
                         if ($truckInfo[$count]['total_truck'] == 1) {
-                            $truckFilledBoxQuantity = ($truckInfo[$count]['fillable_box_quantity_in_each_truck'] > $boxQuantity) ? $boxQuantity : $boxQuantity - $truckInfo[$count]['fillable_box_quantity_in_each_truck'];
+                            $truckFilledBoxQuantity = ($truckInfo[$count]['fillable_box_quantity_in_each_truck'] > $boxQuantity) ? $boxQuantity : $truckInfo[$count]['fillable_box_quantity_in_each_truck'];
                             // $truckFilledBoxQuantity = $truckInfo[$count]['total_box_quantity'] - $truckInfo[$count]['fillable_box_quantity_in_each_truck'];
                         } else {
                             $truckFilledBoxQuantity = $truckInfo[$count]['total_box_quantity'] - (($truckInfo[$count]['total_truck'] - 1) * $truckInfo[$count]['fillable_box_quantity_in_each_truck']);
