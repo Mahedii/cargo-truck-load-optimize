@@ -534,4 +534,38 @@ class FetchDataController extends Controller
         dump($filteredTruckInfo);
         return $filteredTruckInfo;
     }
+
+    private function getFillableQuantity($totalNoOfRow, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth)
+    {
+        $fillableQuantity = 0;
+        $boxContainPerRowInEmptySpace = 0;
+        $boxContainInLastRowEmptySpace = 0;
+        if ($totalNoOfRow == 1) {
+            if ($emptySpaceOfLastFilledRow >= $boxWidth && $emptySpaceOfLastFilledRow >= $boxLength && $boxWidth != $boxLength) {
+                $tmpFillableQtyForLength = intval($emptySpaceOfLastFilledRow / $boxLength);
+                $tmpFillableQtyForWidth = intval($emptySpaceOfLastFilledRow / $boxWidth);
+                $boxContainInLastRowEmptySpace = ($tmpFillableQtyForLength >= $tmpFillableQtyForWidth) ? $tmpFillableQtyForLength : $tmpFillableQtyForWidth;
+            } else {
+                $boxContainInLastRowEmptySpace = intval($emptySpaceOfLastFilledRow / $boxLength);
+            }
+        } else {
+            $boxContainPerRowInEmptySpace = intval($item['empty_space_per_row'] / $boxWidth);
+            $fillableQuantity = ($totalNoOfRow - 1) *  $boxContainPerRowInEmptySpace;
+
+            if ($emptySpaceOfLastFilledRow >= $boxWidth && $emptySpaceOfLastFilledRow >= $boxLength && $boxWidth != $boxLength) {
+                $tmpFillableQtyForLength = intval($emptySpaceOfLastFilledRow / $boxLength);
+                $tmpFillableQtyForWidth = intval($emptySpaceOfLastFilledRow / $boxWidth);
+                $boxContainInLastRowEmptySpace = ($tmpFillableQtyForLength >= $tmpFillableQtyForWidth) ? $tmpFillableQtyForLength : $tmpFillableQtyForWidth;
+            } else {
+                $boxContainInLastRowEmptySpace = intval($emptySpaceOfLastFilledRow / $boxLength);
+            }
+        }
+
+        if ($totalNoOfRow == 1) {
+            $fillableQuantity += $boxContainInLastRowEmptySpace;
+        } else {
+            $fillableQuantity += ($totalNoOfRow - 1) * $boxContainPerRowInEmptySpace + $boxContainInLastRowEmptySpace;
+        }
+        return $fillableQuantity;
+    }
 }
