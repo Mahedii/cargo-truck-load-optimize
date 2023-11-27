@@ -3,14 +3,13 @@
 namespace App\Services\Admin\v1\Cargo\CargoInfo;
 
 use Auth;
-use Validator;
+// use Validator;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Models\Trucks\Trucks;
-use Illuminate\Validation\Rule;
 use App\Models\Cargo\CargoInformation;
+use Illuminate\Support\Facades\Validator;
 
 class AddDataService
 {
@@ -57,7 +56,7 @@ class AddDataService
      *
      * @return array
      */
-    public function cargoInfoAddData($request): array
+    public function cargoInfoAddData($request): mixed
     {
         // $request->validate([
         //     'cargo_id.*' => 'required',
@@ -88,32 +87,42 @@ class AddDataService
 
 
         $validationRules = [];
-        $cargoIds = $request->input('cargo_id');
-        // dd($cargoIds);
 
-        foreach ($cargoIds as $key => $cargoId) {
-            $validationRules["cargo_id.$key"] = ['required'];
-            if (!empty($request->input("length.$key"))) {
+        foreach ($request->input('cargo_id') as $key => $cargoId) {
+            if ($request->input("cargo_id.$key") != null || $request->input("length.$key") != null || $request->input("width.$key") != null || $request->input("height.$key") != null || $request->input("quantity.$key") != null) {
+                $validationRules["cargo_id.$key"] = ['required'];
                 $validationRules["length.$key"] = ['required'];
-            }
-            if (!empty($request->input("width.$key"))) {
                 $validationRules["width.$key"] = ['required'];
-            }
-            if (!empty($request->input("height.$key"))) {
                 $validationRules["height.$key"] = ['required'];
-            }
-            if (!empty($request->input("quantity.$key"))) {
                 $validationRules["quantity.$key"] = ['required'];
             }
         }
 
-        $request->validate($validationRules);
+        $customMessages = [
+            'cargo_id.*.required' => 'The cargo id field is required.',
+            'length.*.required' => 'The length field is required.',
+            'width.*.required' => 'The width field is required.',
+            'height.*.required' => 'The height field is required.',
+            'quantity.*.required' => 'The quantity field is required.',
+        ];
+
+        // $request->validate($validationRules);
+        // $validator = Validator::make($request->all(), $validationRules);
+        $validator = Validator::make($request->all(), $validationRules, $customMessages);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        dd("gg");
 
         // Loop through the submitted data and store it in the database
         foreach ($request->input('cargo_id') as $key => $cargoId) {
             $slug = $this->generateSlug("cargo-" . $cargoId . "box");
             $box_dimension = $request->input("length.$key") . "*" . $request->input("width.$key") . "*" . $request->input("height.$key");
-            if ($request->filled("cargo_id.$key")) {
+            if ($cargoId != null) {
                 $response = CargoInformation::create([
                     'cargo_id' => $cargoId,
                     'box_dimension' => $box_dimension,

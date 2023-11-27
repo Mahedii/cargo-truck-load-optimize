@@ -51,18 +51,13 @@
 
                         <div class="row">
                             <div class="col-lg-12">
-
                                 <div class="card">
-
                                     <div class="card-header align-items-center d-flex">
                                         <h4 class="card-title mb-0 flex-grow-1">Cargo</h4>
-
-                                    </div><!-- end card header -->
-
+                                    </div>
                                     <div class="card-body">
-
                                         <div class="row">
-                                            <table id="example" class="table table-bordered dt-responsive nowrap table-striped align-middle" style="width:100%">
+                                            <table class="table table-bordered dt-responsive nowrap table-striped align-middle" style="width:100%">
                                                 <thead>
                                                     <tr>
                                                         <th>Cargo</th>
@@ -73,29 +68,45 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-
-
                                                     @for ($i = 0; $i < 10; $i++)
                                                         <tr>
                                                             <td>
                                                                 <select class="js-example-basic-single" name="cargo_id[]">
-                                                                    <option>Select Cargo</option>
+                                                                    <option value="">Select Cargo</option>
                                                                     @foreach($cargoListData as $data)
-                                                                        <option value="{{ $data->id }}">{{ $data->name }}</option>
+                                                                        <option value="{{ $data->id }}" {{ old("cargo_id.$i", '') == $data->id ? 'selected' : '' }}>{{ $data->name }}</option>
                                                                     @endforeach
                                                                 </select>
                                                                 @error("cargo_id.$i")
-                                                                    <span class="text-danger">{{ $message }}</span>
+                                                                    <p class="text-danger">{{ $message }}</p>
                                                                 @enderror
                                                             </td>
-                                                            <!-- Add other input fields here (length, width, height, quantity) with proper names -->
-                                                            <td><input type="text" name="length[]" value="{{ old('length.' . $i) }}"></td>
-                                                            <td><input type="text" name="width[]" value="{{ old('width.' . $i) }}"></td>
-                                                            <td><input type="text" name="height[]" value="{{ old('height.' . $i) }}"></td>
-                                                            <td><input type="text" name="quantity[]" value="{{ old('quantity.' . $i) }}"></td>
+                                                            <td>
+                                                                <input type="text" name="length[]" value="{{ old('length.' . $i) }}">
+                                                                @error("length.$i")
+                                                                    <p class="text-danger">{{ $message }}</p>
+                                                                @enderror
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" name="width[]" value="{{ old('width.' . $i) }}">
+                                                                @error("width.$i")
+                                                                    <p class="text-danger">{{ $message }}</p>
+                                                                @enderror
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" name="height[]" value="{{ old('height.' . $i) }}">
+                                                                @error("height.$i")
+                                                                    <p class="text-danger">{{ $message }}</p>
+                                                                @enderror
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" name="quantity[]" value="{{ old('quantity.' . $i) }}">
+                                                                @error("quantity.$i")
+                                                                    <p class="text-danger">{{ $message }}</p>
+                                                                @enderror
+                                                            </td>
                                                         </tr>
                                                     @endfor
-
                                                     <tr>
                                                         <td colspan="5">
                                                             <div class="text-end mb-3">
@@ -103,25 +114,17 @@
                                                             </div>
                                                         </td>
                                                     </tr>
-
                                                 </tbody>
                                             </table>
                                         </div>
-
                                     </div>
                                 </div>
-                                <!-- end card -->
                             </div>
-                            <!-- end col -->
-
-
                         </div>
-                        <!-- end row -->
-
                     </form>
 
 
-                    <form method="POST" action="{{ route('cargoInfo.addData') }}" enctype="multipart/form-data">
+                    {{-- <form method="POST" action="{{ route('cargoInfo.addData') }}" enctype="multipart/form-data">
 
                         @csrf
 
@@ -133,7 +136,7 @@
                                     <div class="card-header align-items-center d-flex">
                                         <h4 class="card-title mb-0 flex-grow-1">Cargo</h4>
 
-                                    </div><!-- end card header -->
+                                    </div>
 
                                     <div class="card-body">
 
@@ -154,7 +157,7 @@
                                                     @endif
                                                 </div>
 
-                                            </div><!--end col-->
+                                            </div>
 
                                             <div class="col-md-12">
                                                 <div class="mb-3">
@@ -200,19 +203,15 @@
 
                                     </div>
                                 </div>
-                                <!-- end card -->
 
                                 <div class="text-end mb-3">
                                     <button type="submit" class="btn btn-success w-sm">Add</button>
                                 </div>
                             </div>
-                            <!-- end col -->
-
 
                         </div>
-                        <!-- end row -->
 
-                    </form>
+                    </form> --}}
 
                 </div>
 
