@@ -45,6 +45,81 @@
                         </div>
                     </div>
 
+                    <form method="POST" action="{{ route('cargoInfo.addData') }}" enctype="multipart/form-data">
+
+                        @csrf
+
+                        <div class="row">
+                            <div class="col-lg-12">
+
+                                <div class="card">
+
+                                    <div class="card-header align-items-center d-flex">
+                                        <h4 class="card-title mb-0 flex-grow-1">Cargo</h4>
+
+                                    </div><!-- end card header -->
+
+                                    <div class="card-body">
+
+                                        <div class="row">
+                                            <table id="example" class="table table-bordered dt-responsive nowrap table-striped align-middle" style="width:100%">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Cargo</th>
+                                                        <th>Length</th>
+                                                        <th>Width</th>
+                                                        <th>Heigth</th>
+                                                        <th>Quantity</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+
+
+                                                    @for ($i = 0; $i < 10; $i++)
+                                                        <tr>
+                                                            <td>
+                                                                <select class="js-example-basic-single" name="cargo_id[]">
+                                                                    <option>Select Cargo</option>
+                                                                    @foreach($cargoListData as $data)
+                                                                        <option value="{{ $data->id }}">{{ $data->name }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                @error("cargo_id.$i")
+                                                                    <span class="text-danger">{{ $message }}</span>
+                                                                @enderror
+                                                            </td>
+                                                            <!-- Add other input fields here (length, width, height, quantity) with proper names -->
+                                                            <td><input type="text" name="length[]" value="{{ old('length.' . $i) }}"></td>
+                                                            <td><input type="text" name="width[]" value="{{ old('width.' . $i) }}"></td>
+                                                            <td><input type="text" name="height[]" value="{{ old('height.' . $i) }}"></td>
+                                                            <td><input type="text" name="quantity[]" value="{{ old('quantity.' . $i) }}"></td>
+                                                        </tr>
+                                                    @endfor
+
+                                                    <tr>
+                                                        <td colspan="5">
+                                                            <div class="text-end mb-3">
+                                                                <button type="submit" class="btn btn-success w-sm">Add</button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                    </div>
+                                </div>
+                                <!-- end card -->
+                            </div>
+                            <!-- end col -->
+
+
+                        </div>
+                        <!-- end row -->
+
+                    </form>
+
 
                     <form method="POST" action="{{ route('cargoInfo.addData') }}" enctype="multipart/form-data">
 
