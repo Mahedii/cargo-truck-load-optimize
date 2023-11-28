@@ -24,7 +24,7 @@ class AddDataController extends Controller
             $response = $this->addDataService->getResponse();
 
             if ($response["status"] == 200) {
-                return redirect()->back()->with('crudMsgSp', 'Data Added Successfully');
+                return redirect()->back()->with('crudMsg', 'Data Added Successfully');
             }
         } catch (Exception $e) {
             dd($e->getMessage());

@@ -133,7 +133,7 @@
                     <div class="row">
                         <div class="col-lg-12">
                             <div>
-                                <h5>Cargo Result</h5>
+                                <h5>Selected Trucks:</h5>
                                 <div class="timeline">
                                     @foreach (session('finalTrucksData') as $key => $trucksData)
                                             <div class="timeline-item @if (++$key % 2 != 0) left @else right @endif">
@@ -145,30 +145,34 @@
                                                     <p>Truck Dimension: <span class="text-muted">{{ $trucksData['truck_dimension'] }}</span></p>
                                                     <p>Box Dimension: <span class="text-muted">{{ $trucksData['box_dimension'] }}</span></p>
                                                     <div class="list-group col nested-list nested-sortable-handle">
-                                                        <div class="list-group-item "><i class="ri-drag-move-fill align-bottom handle"></i>Boxes
-                                                            <div class="list-group nested-list nested-sortable-handle">
-                                                                <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Full Empty Space
-                                                                    @foreach ($trucksData['individual_truck'] as $key => $emptyTruck)
+                                                        @foreach ($trucksData['individual_truck'] as $key => $emptyTruck)
+                                                            <div class="list-group-item "><i class="ri-truck-line align-bottom handle"></i>Truck {{ $key + 1 }}
+                                                                <div class="list-group nested-list nested-sortable-handle">
+                                                                    <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Full Empty Space
                                                                         <div class="list-group-item"><i class="bx bx-box align-bottom handle"></i>Box Dimension: {{ $emptyTruck['box_dimension'] }}
                                                                             <div class="list-group nested-list nested-sortable-handle">
                                                                                 <div class="list-group-item "><i class="ri-drag-move-fill align-bottom handle"></i>Total Box: {{ $emptyTruck['total_box_quantity'] }}</div>
                                                                                 <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Filled Box: {{ $emptyTruck['total_filled_box_quantity'] }}</div>
                                                                             </div>
                                                                         </div>
-                                                                    @endforeach
-                                                                </div>
-                                                                <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Partial Empty Space
-                                                                    @foreach ($trucksData['other_box_load_info'] as $key => $partialEmptyTruck)
-                                                                        <div class="list-group-item"><i class="bx bx-box align-bottom handle"></i>Box Dimension: {{ $partialEmptyTruck['box_dimension'] }}
-                                                                            <div class="list-group nested-list nested-sortable-handle">
-                                                                                <div class="list-group-item "><i class="ri-drag-move-fill align-bottom handle"></i>Total Box: {{ $partialEmptyTruck['total_box_quantity'] }}</div>
-                                                                                <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Filled Box: {{ $partialEmptyTruck['total_filled_box_quantity'] }}</div>
+                                                                    </div>
+                                                                    <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Partial Empty Space
+                                                                        @if ($trucksData['other_box_load_info'][$key]['total_filled_box_quantity'] != null)
+                                                                            <div class="list-group-item"><i class="bx bx-box align-bottom handle"></i>Box Dimension: {{ $trucksData['other_box_load_info'][$key]['box_dimension'] }}
+                                                                                <div class="list-group nested-list nested-sortable-handle">
+                                                                                    <div class="list-group-item "><i class="ri-drag-move-fill align-bottom handle"></i>Total Box: {{ $trucksData['other_box_load_info'][$key]['total_box_quantity'] }}</div>
+                                                                                    <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Filled Box: {{ $trucksData['other_box_load_info'][$key]['total_filled_box_quantity'] }}</div>
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    @endforeach
+                                                                        @else
+                                                                            <div class="list-group-item" style="color: red">
+                                                                                <i class="bx bx-box align-bottom handle"></i>Not Fillable
+                                                                            </div>
+                                                                        @endif
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
+                                                        @endforeach
                                                     </div>
                                                     <div class="row g-2">
                                                         <div class="col-sm-6">

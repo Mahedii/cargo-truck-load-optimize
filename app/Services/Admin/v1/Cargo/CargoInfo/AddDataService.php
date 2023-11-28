@@ -116,7 +116,7 @@ class AddDataService
                 ->withInput();
         }
 
-        dd("gg");
+        // dd("gg");
 
         // Loop through the submitted data and store it in the database
         foreach ($request->input('cargo_id') as $key => $cargoId) {

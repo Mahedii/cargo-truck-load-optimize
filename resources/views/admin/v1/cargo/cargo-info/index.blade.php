@@ -78,7 +78,7 @@
                                                                     @endforeach
                                                                 </select>
                                                                 @error("cargo_id.$i")
-                                                                    <p class="text-danger">{{ $message }}</p>
+                                                                    <span class="text-danger">{{ $message }}</span>
                                                                 @enderror
                                                             </td>
                                                             <td>
