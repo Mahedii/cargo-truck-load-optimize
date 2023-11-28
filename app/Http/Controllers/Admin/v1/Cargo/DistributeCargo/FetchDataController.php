@@ -1006,6 +1006,7 @@ class FetchDataController extends Controller
             // $boxLength = $arr[0] + (0.1 * $arr[1]);
             // dump(gettype($boxLength));
             $boxWidth = $boxDim[1];
+            $boxHeight = $boxDim[2];
             // dump($boxVolume);
 
             foreach ($filteredTruckInfo as $tempKey => $item) {
@@ -1232,11 +1233,12 @@ class FetchDataController extends Controller
                         $boxQuantity -= $filledQuantity;
                     }
                     // dd($filteredTruckInfo[$tempKey]);
-                    if ($lasCargotBox == true) {
+                    if ($lasCargotBox == true || $filledQuantity == 0) {
                         $filteredTruckInfo[$tempKey]["other_box_load_info"][] = [
                             "truckArrTempKey" => null,
                             "cargoArrTempKey" => null,
                             "box_dimension" => null,
+                            "used_box_dimension" => null,
                             "total_box_quantity" => null,
                             "can_contain_total_box_on_partially_filled_row" => null,
                             "can_contain_total_box_on_fully_unfilled_row" => null,
@@ -1251,6 +1253,7 @@ class FetchDataController extends Controller
                             // "box_dimension" => ($filledQuantity != 0) ? $this->cargoInfo[$cargoBoxkey]['box_dimension'] : null,
                             // "total_box_quantity" => ($filledQuantity != 0) ? (($i == 1) ? $this->cargoInfo[$cargoBoxkey]['quantity'] : $tmpBoxQuantity) : null,
                             "box_dimension" => ($filledQuantity != 0) ? $cargoInfo['box_dimension'] : null,
+                            "used_box_dimension" => $boxLength . "*" . $boxWidth . "*" . $boxHeight,
                             "total_box_quantity" => ($filledQuantity != 0) ? (($i == 1) ? $cargoInfo['quantity'] : $tmpBoxQuantity) : null,
                             "can_contain_total_box_on_partially_filled_row" => $boxQuantityOnPartiallyFilledRow,
                             "can_contain_total_box_on_fully_unfilled_row" => intval($availableTotalNoOfRow * $boxContainPerRow),
