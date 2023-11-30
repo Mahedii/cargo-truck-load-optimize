@@ -895,7 +895,8 @@ class FetchDataController extends Controller
         $boxContainInLastRowEmptySpace = 0;
         $usedBoxDim = explode('*', $usedBoxDim);
         $usedBoxLength = $usedBoxDim[0];
-        $ifBoxCanFit = false;
+
+        $spaceInfo = [];
 
         if ($totalNoOfRow == 1) {
             // if ($emptySpaceOfLastFilledRow >= $boxWidth && $emptySpaceOfLastFilledRow >= $boxLength && $boxWidth != $boxLength) {
@@ -906,31 +907,7 @@ class FetchDataController extends Controller
             //     $boxContainInLastRowEmptySpace = $this->getIntegerFromFloatingPoint($emptySpaceOfLastFilledRow / $boxLength);
             // }
 
-            if (($boxWidth > $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow) && $boxWidth <= $usedBoxLength) {
-                $ifBoxCanFit = true;
-                $tmpBoxWidth = $boxLength;
-                $boxLength = $boxWidth;
-                $boxWidth = $tmpBoxWidth;
-                $boxContainInLastRowEmptySpace = $emptySpaceOfLastFilledRow / $boxWidth;
-            } else if (($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow) && ($boxWidth <= $usedBoxLength && $boxLength <= $usedBoxLength) && $boxLength != $boxWidth) {
-                $ifBoxCanFit = true;
-                $boxContainPerRowForWidth = $this->getIntegerFromFloatingPoint($emptySpaceOfLastFilledRow / $boxWidth);
-                $boxContainPerRowForLength = $this->getIntegerFromFloatingPoint($emptySpaceOfLastFilledRow / $boxLength);
-                $fillableBoxQuantityForEachTruckForWidth = intval($usedBoxLength / $boxLength) * $boxContainPerRowForWidth;
-                $fillableBoxQuantityForEachTruckForLength = intval($usedBoxLength / $boxWidth) * $boxContainPerRowForLength;
-
-                if ($fillableBoxQuantityForEachTruckForWidth >= $fillableBoxQuantityForEachTruckForLength) {
-                    $boxContainInLastRowEmptySpace = $boxContainPerRowForWidth;
-                } else {
-                    $boxContainInLastRowEmptySpace = $boxContainPerRowForLength;
-                    $tmpBoxWidth = $boxLength;
-                    $boxLength = $boxWidth;
-                    $boxWidth = $tmpBoxWidth;
-                }
-            } else if ((($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength > $emptySpaceOfLastFilledRow && $boxLength <= $usedBoxLength) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxWidth > $usedBoxLength && $boxLength <= $usedBoxLength) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $usedBoxLength && $boxWidth == $boxLength) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $usedBoxLength))) {
-                $ifBoxCanFit = true;
-                $boxContainInLastRowEmptySpace = $emptySpaceOfLastFilledRow / $boxWidth;
-            }
+            $boxContainInLastRowEmptySpace = $this->getboxContainQuantityInLastRowEmptySpace($boxWidth, $boxLength, $usedBoxLength, $emptySpaceOfLastFilledRow);
 
             // if ($emptySpaceOfLastFilledRow < $boxWidth && $emptySpaceOfLastFilledRow >= $boxLength) {
             //     $boxContainInLastRowEmptySpace = intval($emptySpaceOfLastFilledRow / $boxLength);
@@ -955,31 +932,7 @@ class FetchDataController extends Controller
             //     $boxContainInLastRowEmptySpace = $this->getIntegerFromFloatingPoint($emptySpaceOfLastFilledRow / $boxLength);
             // }
 
-            if (($boxWidth > $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow) && $boxWidth <= $usedBoxLength) {
-                $ifBoxCanFit = true;
-                $tmpBoxWidth = $boxLength;
-                $boxLength = $boxWidth;
-                $boxWidth = $tmpBoxWidth;
-                $boxContainInLastRowEmptySpace = $emptySpaceOfLastFilledRow / $boxWidth;
-            } else if (($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow) && ($boxWidth <= $usedBoxLength && $boxLength <= $usedBoxLength) && $boxLength != $boxWidth) {
-                $ifBoxCanFit = true;
-                $boxContainPerRowForWidth = $this->getIntegerFromFloatingPoint($emptySpaceOfLastFilledRow / $boxWidth);
-                $boxContainPerRowForLength = $this->getIntegerFromFloatingPoint($emptySpaceOfLastFilledRow / $boxLength);
-                $fillableBoxQuantityForEachTruckForWidth = intval($usedBoxLength / $boxLength) * $boxContainPerRowForWidth;
-                $fillableBoxQuantityForEachTruckForLength = intval($usedBoxLength / $boxWidth) * $boxContainPerRowForLength;
-
-                if ($fillableBoxQuantityForEachTruckForWidth >= $fillableBoxQuantityForEachTruckForLength) {
-                    $boxContainInLastRowEmptySpace = $boxContainPerRowForWidth;
-                } else {
-                    $boxContainInLastRowEmptySpace = $boxContainPerRowForLength;
-                    $tmpBoxWidth = $boxLength;
-                    $boxLength = $boxWidth;
-                    $boxWidth = $tmpBoxWidth;
-                }
-            } else if ((($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength > $emptySpaceOfLastFilledRow && $boxLength <= $usedBoxLength) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxWidth > $usedBoxLength && $boxLength <= $usedBoxLength) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $usedBoxLength && $boxWidth == $boxLength) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $usedBoxLength))) {
-                $ifBoxCanFit = true;
-                $boxContainInLastRowEmptySpace = $emptySpaceOfLastFilledRow / $boxWidth;
-            }
+            $boxContainInLastRowEmptySpace = $this->getboxContainQuantityInLastRowEmptySpace($boxWidth, $boxLength, $usedBoxLength, $emptySpaceOfLastFilledRow);
         }
         // dump($boxContainPerRowInEmptySpace);
         // dump($boxContainInLastRowEmptySpace);
@@ -992,8 +945,51 @@ class FetchDataController extends Controller
             // dump("else");
             $fillableQuantity += ($totalNoOfRow - 1) * $boxContainPerRowInEmptySpace + $boxContainInLastRowEmptySpace;
         }
+
+        $spaceInfo = [
+            "empty_space" => [
+                "fully_filled_row_total_length_empty_space" => ($boxContainPerRowInEmptySpace > 0) ? ($totalNoOfRow - 1) * $boxLength : null,
+                "fully_filled_row_empty_space" => ($boxContainPerRowInEmptySpace > 0) ? $emptySpacePerRow - $boxContainPerRowInEmptySpace * $boxWidth : null,
+                "partially_filled_row_length_empty_space" => ($boxContainInLastRowEmptySpace > 0) ? $usedBoxLength - $boxLength : null,
+                "partially_filled_row_empty_space" => ($boxContainInLastRowEmptySpace > 0) ? $emptySpaceOfLastFilledRow - $boxContainInLastRowEmptySpace * $boxWidth : null,
+            ],
+            "fillableQuantity" => $fillableQuantity
+        ];
+
         // dump($fillableQuantity);
-        return $fillableQuantity;
+        // return $fillableQuantity;
+        return $spaceInfo;
+    }
+
+    private function getboxContainQuantityInLastRowEmptySpace($boxWidth, $boxLength, $usedBoxLength, $emptySpaceOfLastFilledRow)
+    {
+        $ifBoxCanFit = false;
+        $boxContainInLastRowEmptySpace = 0;
+        if (($boxWidth > $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow) && $boxWidth <= $usedBoxLength) {
+            $ifBoxCanFit = true;
+            $tmpBoxWidth = $boxLength;
+            $boxLength = $boxWidth;
+            $boxWidth = $tmpBoxWidth;
+            $boxContainInLastRowEmptySpace = $emptySpaceOfLastFilledRow / $boxWidth;
+        } else if (($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow) && ($boxWidth <= $usedBoxLength && $boxLength <= $usedBoxLength) && $boxLength != $boxWidth) {
+            $ifBoxCanFit = true;
+            $boxContainPerRowForWidth = $this->getIntegerFromFloatingPoint($emptySpaceOfLastFilledRow / $boxWidth);
+            $boxContainPerRowForLength = $this->getIntegerFromFloatingPoint($emptySpaceOfLastFilledRow / $boxLength);
+            $fillableBoxQuantityForEachTruckForWidth = intval($usedBoxLength / $boxLength) * $boxContainPerRowForWidth;
+            $fillableBoxQuantityForEachTruckForLength = intval($usedBoxLength / $boxWidth) * $boxContainPerRowForLength;
+
+            if ($fillableBoxQuantityForEachTruckForWidth >= $fillableBoxQuantityForEachTruckForLength) {
+                $boxContainInLastRowEmptySpace = $boxContainPerRowForWidth;
+            } else {
+                $boxContainInLastRowEmptySpace = $boxContainPerRowForLength;
+                $tmpBoxWidth = $boxLength;
+                $boxLength = $boxWidth;
+                $boxWidth = $tmpBoxWidth;
+            }
+        } else if ((($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength > $emptySpaceOfLastFilledRow && $boxLength <= $usedBoxLength) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxWidth > $usedBoxLength && $boxLength <= $usedBoxLength) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $usedBoxLength && $boxWidth == $boxLength) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $usedBoxLength))) {
+            $ifBoxCanFit = true;
+            $boxContainInLastRowEmptySpace = $emptySpaceOfLastFilledRow / $boxWidth;
+        }
     }
 
     private function getIntegerFromFloatingPoint($floatingPoint)
@@ -1114,23 +1110,27 @@ class FetchDataController extends Controller
 
                             $totalNoOfRow = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxLength);
 
-                            $fillableQuantity += $this->getFillableQuantity($totalNoOfRow, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
+                            $getFillableQuantity = $this->getFillableQuantity($totalNoOfRow, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
+                            $fillableQuantity += $getFillableQuantity["fillableQuantity"];
                             $filledQuantityOnPrevUnoccupiedRowSpace = $fillableQuantity;
                         } else if ((($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength > $emptySpaceOfLastFilledRow) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength == $boxWidth)) && $boxQuantity > 0) {
                             // $ifBoxCanFit = true;
 
                             $totalNoOfRow = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxLength);
 
-                            $fillableQuantity += $this->getFillableQuantity($totalNoOfRow, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
+                            $getFillableQuantity = $this->getFillableQuantity($totalNoOfRow, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
+                            $fillableQuantity += $getFillableQuantity["fillableQuantity"];
                             $filledQuantityOnPrevUnoccupiedRowSpace = $fillableQuantity;
                         } else if ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow && $boxLength != $boxWidth && $boxQuantity > 0) {
                             // $ifBoxCanFit = true;
 
                             $totalNoOfRowForLength = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxWidth);
-                            $fillableQuantityForLength = $this->getFillableQuantity($totalNoOfRowForLength, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxWidth, $boxLength, $item['used_box_dimension']);
+                            $getFillableQuantity = $this->getFillableQuantity($totalNoOfRowForLength, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxWidth, $boxLength, $item['used_box_dimension']);
+                            $fillableQuantityForLength = $getFillableQuantity["fillableQuantity"];
 
                             $totalNoOfRowForWidth = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxLength);
-                            $fillableQuantityForWidth = $this->getFillableQuantity($totalNoOfRowForWidth, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
+                            $getFillableQuantity = $this->getFillableQuantity($totalNoOfRowForWidth, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
+                            $fillableQuantityForWidth = $getFillableQuantity["fillableQuantity"];
 
                             if ($fillableQuantityForWidth >= $fillableQuantityForLength) {
                                 $fillableQuantity = $fillableQuantityForWidth;
