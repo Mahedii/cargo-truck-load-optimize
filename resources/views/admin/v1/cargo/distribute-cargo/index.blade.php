@@ -132,6 +132,53 @@
                 @if(session('finalTrucksData'))
                     <div class="row">
                         <div class="col-lg-12">
+                            @php
+                                $summedTrucks = [];
+                            @endphp
+
+                            @foreach(session('finalTrucksData') as $item)
+                                @php
+                                    $truck = $item['truck'];
+                                    $totalTruck = $item['total_truck'];
+
+                                    // If the truck already exists in $summedTrucks array, add the total_truck value
+                                    if (isset($summedTrucks[$truck])) {
+                                        $summedTrucks[$truck] += $totalTruck;
+                                    } else {
+                                        // If the truck is not in $summedTrucks array, initialize it
+                                        $summedTrucks[$truck] = $totalTruck;
+                                    }
+                                @endphp
+                            @endforeach
+
+                            <div class="card">
+
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Trucks Summary</h5>
+                                </div>
+
+                                <div class="card-body">
+                                    <table class="table table-bordered dt-responsive nowrap table-striped align-middle" style="width:100%">
+                                        <thead>
+                                            <tr>
+                                                <th>Truck</th>
+                                                <th>Total Truck</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($summedTrucks as $truck => $totalTruck)
+                                                <tr>
+                                                    <td>{{ $truck }}</td>
+                                                    <td>{{ $totalTruck }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-12">
                             <div>
                                 <h5>Selected Trucks:</h5>
                                 <div class="timeline">
