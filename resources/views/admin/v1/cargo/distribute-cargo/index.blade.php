@@ -149,7 +149,7 @@
                                                             <div class="list-group-item "><i class="ri-truck-line align-bottom handle"></i>Truck {{ $key + 1 }}
                                                                 <div class="list-group nested-list nested-sortable-handle">
                                                                     <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Full Empty Space
-                                                                        <div class="list-group-item"><i class="bx bx-box align-bottom handle"></i>Box Dimension: {{ $emptyTruck['box_dimension'] }}
+                                                                        <div class="list-group-item"><i class="bx bx-box align-bottom handle"></i>Box Dimension: {{ $emptyTruck['used_box_dimension'] }}
                                                                             <div class="list-group nested-list nested-sortable-handle">
                                                                                 <div class="list-group-item "><i class="ri-drag-move-fill align-bottom handle"></i>Total Box: {{ $emptyTruck['total_box_quantity'] }}</div>
                                                                                 <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Filled Box: {{ $emptyTruck['total_filled_box_quantity'] }}</div>
@@ -158,7 +158,7 @@
                                                                     </div>
                                                                     <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Partial Empty Space
                                                                         @if ($trucksData['other_box_load_info'][$key]['total_filled_box_quantity'] != null)
-                                                                            <div class="list-group-item"><i class="bx bx-box align-bottom handle"></i>Box Dimension: {{ $trucksData['other_box_load_info'][$key]['box_dimension'] }}
+                                                                            <div class="list-group-item"><i class="bx bx-box align-bottom handle"></i>Box Dimension: {{ $trucksData['other_box_load_info'][$key]['used_box_dimension'] }}
                                                                                 <div class="list-group nested-list nested-sortable-handle">
                                                                                     <div class="list-group-item "><i class="ri-drag-move-fill align-bottom handle"></i>Total Box: {{ $trucksData['other_box_load_info'][$key]['total_box_quantity'] }}</div>
                                                                                     <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Filled Box: {{ $trucksData['other_box_load_info'][$key]['total_filled_box_quantity'] }}</div>
