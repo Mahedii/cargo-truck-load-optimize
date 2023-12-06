@@ -216,6 +216,16 @@
                                                                                 <i class="bx bx-box align-bottom handle"></i>Not Fillable
                                                                             </div>
                                                                         @endif
+                                                                        @if (array_key_exists('new_added_boxes', $trucksData['other_box_load_info'][$key]))
+                                                                            @foreach ($trucksData['other_box_load_info'][$key]['new_added_boxes'] as $boxKey => $boxValue)
+                                                                                <div class="list-group-item"><i class="bx bx-box align-bottom handle"></i>Box Dimension: {{ $boxKey }}
+                                                                                    <div class="list-group nested-list nested-sortable-handle">
+                                                                                        {{-- <div class="list-group-item "><i class="ri-drag-move-fill align-bottom handle"></i>Total Box: {{ $trucksData['other_box_load_info'][$key]['total_box_quantity'] }}</div> --}}
+                                                                                        <div class="list-group-item"><i class="ri-drag-move-fill align-bottom handle"></i>Filled Box: {{ $boxValue }}</div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            @endforeach
+                                                                        @endif
                                                                     </div>
                                                                 </div>
                                                             </div>
