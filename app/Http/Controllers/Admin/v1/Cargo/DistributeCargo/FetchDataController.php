@@ -15,11 +15,6 @@ use App\Services\Admin\v1\Cargo\DistributeCargo\FetchDataService;
 class FetchDataController extends Controller
 {
     private $fetchDataService;
-    private $totalBoxVolumeWithoutHeight;
-    private array $consolidatedCargo;
-    private array $remainingCargo;
-    private array $truckCargoInfoAfterLoad;
-    private array $truckBoxContainCapacity;
     private $cargoInfo;
 
     /**
@@ -74,11 +69,6 @@ class FetchDataController extends Controller
         // dd($uniqueTrucks);
         $uniqueTrucksArray = $uniqueTrucks->toArray();
 
-        // Initialize variables
-        $this->consolidatedCargo = [];
-        $this->remainingCargo = [];
-        $this->truckCargoInfoAfterLoad = [];
-        $this->truckBoxContainCapacity = [];
         // dump($this->cargoInfo);
 
         // Sort cargo information by box dimensions (descending order) and quantity (descending order)
@@ -93,6 +83,7 @@ class FetchDataController extends Controller
         }
         array_multisort($dimensions, SORT_DESC, $quantities, SORT_DESC, $this->cargoInfo);
 
+        $boxData = $this->cargoInfo;
         // dd($this->cargoInfo[1]);
 
         // Sort cargo information by box dimensions (descending order) and quantity (descending order)
@@ -109,21 +100,11 @@ class FetchDataController extends Controller
 
         $truckInfo = $filteredTruckInfo = $chosenTrucks = $cargoBoxLoadInfo = $finalTrucks = [];
         $boxTotalVolumeWithoutHeight = [];
-        $minValueTruckType = $totalBoxLength = $totalRowNeededForContainingBox =  $emptySpacePerRow = null;
-
-        $smallestValue = PHP_INT_MAX; // Initialize to a high value.
-        $lowestTotalTruck = PHP_INT_MAX; // Initialize to a high value.
-        $highestFillableBoxInEachTruck = PHP_INT_MIN;
-        $minDiff = PHP_INT_MAX;
-        $maxDiff = PHP_INT_MAX;
-        $closestMin = null;
-        $closestMax = null;
 
         foreach ($this->cargoInfo as $cargokey => $box) {
             // dump($this->cargoInfo[$cargokey]);
             $box = $this->cargoInfo[$cargokey];
             // dump($cargokey);
-            // $this->truckBoxContainCapacity = [];
             dump($box);
             $boxDim = explode('*', $box['box_dimension']);
             // $boxVolume = $boxDim[0] * $boxDim[1] * $boxDim[2];
@@ -275,7 +256,7 @@ class FetchDataController extends Controller
 
         // Return the consolidated cargo and any remaining cargo to the view
         // return response()->json($result);
-        return redirect()->back()->with('finalTrucksData', $finalTrucks);
+        return redirect()->back()->with('finalTrucksData', ["boxData" => $boxData, "trucksData" => $finalTrucks]);
         // return view('admin.v1.cargo.distribute-cargo.index', $finalTrucks);
     }
 
@@ -1046,6 +1027,7 @@ class FetchDataController extends Controller
         }
 
         dump($finalSelectedTempTruck);
+        $finalSelectedTempTruck = (count($finalSelectedTempTruck) == 1) ? $finalSelectedTempTruck[0] : $finalSelectedTempTruck;
 
         $boxInfo = [];
         // dd(count($finalSelectedTempTruck['individual_truck']));
@@ -1087,7 +1069,6 @@ class FetchDataController extends Controller
                 }
             }
         }
-
 
         foreach ($finalSelectedTempTruck['other_box_load_info'] as $key => $otherBox) {
             $count = count($finalSelectedTempTruck['other_box_load_info']);

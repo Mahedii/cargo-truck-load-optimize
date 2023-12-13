@@ -53,6 +53,7 @@ class AuthController extends Controller
 
         $credentials = $request->only('email', 'password');
         if (Auth::attempt($credentials)) {
+            return redirect()->intended('/cargo/distribute/data')->withSuccess("Successfully logged in");
             return redirect()->intended('/admin/dashboard')
                         ->withSuccess('Signed in');
         }

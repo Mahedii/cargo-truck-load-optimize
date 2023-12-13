@@ -131,12 +131,12 @@
 
                 @if(session('finalTrucksData'))
                     <div class="row">
-                        <div class="col-lg-12">
+                        <div class="col-lg-6">
                             @php
                                 $summedTrucks = [];
                             @endphp
 
-                            @foreach(session('finalTrucksData') as $item)
+                            @foreach(session('finalTrucksData.trucksData') as $item)
                                 @php
                                     $truck = $item['truck'];
                                     $totalTruck = $item['total_truck'];
@@ -178,11 +178,38 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Box Summary</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-bordered dt-responsive nowrap table-striped align-middle" style="width:100%">
+                                        <thead>
+                                            <tr>
+                                                <th>Box</th>
+                                                <th>Quantity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach(session('finalTrucksData.boxData') as $key => $box)
+                                                <tr>
+                                                    <td>{{ $box['box_dimension'] }}</td>
+                                                    <td>{{ $box['quantity'] }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-lg-12">
                             <div>
                                 <h5>Selected Trucks:</h5>
                                 <div class="timeline">
-                                    @foreach (session('finalTrucksData') as $key => $trucksData)
+                                    @foreach (session('finalTrucksData.trucksData') as $key => $trucksData)
                                             <div class="timeline-item @if (++$key % 2 != 0) left @else right @endif">
                                                 <i class="icon ri-truck-line"></i>
                                                 {{-- <div class="date">15 Dec 2021</div> --}}
@@ -231,11 +258,11 @@
                                                             </div>
                                                         @endforeach
                                                     </div>
-                                                    <div class="row g-2">
+                                                    {{-- <div class="row g-2">
                                                         <div class="col-sm-6">
                                                             <button type="submit" class="btn btn-success w-sm">View More</button>
                                                         </div>
-                                                    </div>
+                                                    </div> --}}
                                                 </div>
                                             </div>
 
@@ -243,14 +270,12 @@
                                     @endforeach
                                 </div>
                             </div>
-                        </div><!--end col-->
-                    </div><!--end row-->
+                        </div>
+                    </div>
                 @endif
 
             </div>
-            <!-- container-fluid -->
         </div>
-        <!-- End Page-content -->
 
         @include("admin.v1.cargo.distribute-cargo.ajax.index")
 
