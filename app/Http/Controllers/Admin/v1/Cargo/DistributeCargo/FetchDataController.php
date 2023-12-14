@@ -549,35 +549,23 @@ class FetchDataController extends Controller
         dump($filteredTruckInfo);
         $excludedBoxDimension = $filteredTruckInfo[0]['box_dimension'];
         $tmpSelectedTempTruck = [];
+        $tmpFilteredTruckInfo = $filteredTruckInfo;
 
-        foreach ($this->cargoInfo as $cargoBoxKey => $cargoInfo) {
-            if ($cargoInfo['box_dimension'] == $excludedBoxDimension) {
-                continue;
-            }
-            dump($cargoInfo['box_dimension']);
-
-            $boxDim = explode('*', $cargoInfo['box_dimension']);
-            $boxLength = floatval($boxDim[0]);
-            // $arr = explode('.', $boxLength);
-            // $boxLength = $arr[0] + (0.1 * $arr[1]);
-            // dump(gettype($boxLength));
-            $boxWidth = $boxDim[1];
-            $boxHeight = $boxDim[2];
-            // dump($boxVolume);
-
-            $tmpFilteredTruckInfo = $filteredTruckInfo;
-
+        if ($lasCargoBox == true) {
             foreach ($filteredTruckInfo as $tempKey => $item) {
-                $prevBoxDim = explode('*', $item['used_box_dimension']);
+                $boxDim = explode('*', $item['used_box_dimension']);
+                $boxLength = floatval($boxDim[0]);
+                $boxWidth = $boxDim[1];
+                $boxHeight = $boxDim[2];
+                $tmpBoxQuantity = $boxQuantity = $item['total_box_quantity'];
+
                 $truckDim = explode('*', $item['truck_dimension']);
                 $truckLength = $truckDim[0];
                 $truckWidth = $truckDim[1];
                 $truckDimension = $truckLength . "*" . $truckWidth . "*" . $truckDim[2];
-                // $tmpBoxQuantity = $boxQuantity = $this->cargoInfo[$cargoBoxkey]['quantity'];
-                $tmpBoxQuantity = $boxQuantity = $cargoInfo['quantity'];
                 // dump($item['total_truck']);
 
-                if ($cargoInfo['quantity'] <= 0) {
+                if ($item['total_truck'] >= 1) {
                     for ($i = 1; $i <= $item['total_truck']; $i++) {
                         $boxDimension = explode('*', $item['used_box_dimension']);
                         $truckDimension = explode('*', $item['truck_dimension']);
@@ -623,277 +611,65 @@ class FetchDataController extends Controller
                             "fully_unfilled_empty_space_by_width" => $truckWidth,
                         ];
                     }
-                } else {
-                    for ($i = 1; $i <= $item['total_truck']; $i++) {
-                        // dump($cargoInfo['quantity']);
-                        $fillableQuantity = $filledQuantity = $boxContainPerRow = $filledQuantityOnPrevUnoccupiedRowSpace = $boxQuantityOnFullyUnfilledRow = $boxQuantityOnPartiallyFilledRow = 0;
-                        $availableTotalNoOfRow = 0;
-                        $emptySpaceByLength = $emptySpaceByWidth = 0;
-                        $boxDimension = explode('*', $item['used_box_dimension']);
-                        $truckDimension = explode('*', $item['truck_dimension']);
+                }
+            }
 
-                        $emptySpacePerRow = $item['empty_space_per_row'];
-                        $emptySpaceOfLastFilledRow = $item['empty_space_of_last_filled_row'];
-                        $ifBoxCanFit = false;
-                        $tmpBoxLength = $boxLength;
-                        $tmpBoxWidth = $boxWidth;
-                        $spaceInfo = null;
+            $maxFilledBoxTruckKey = $this->getMaxFilledBoxTruckKey($tmpFilteredTruckInfo);
+            $selectedTempTruck = $tmpFilteredTruckInfo[$maxFilledBoxTruckKey];
+            $tmpSelectedTempTruck[] = $selectedTempTruck;
+        } else {
+            foreach ($this->cargoInfo as $cargoBoxKey => $cargoInfo) {
+                if ($cargoInfo['box_dimension'] == $excludedBoxDimension) {
+                    continue;
+                }
+                dump($cargoInfo['box_dimension']);
 
-                        if ($i == $item['total_truck']) {
-                            if ($item['total_truck'] == 1) {
-                                $lastTruckFilledBoxQuantity = ($item['fillable_box_quantity_in_each_truck'] > $item['total_box_quantity']) ? $item['total_box_quantity'] : $item['fillable_box_quantity_in_each_truck'];
-                            } else {
-                                $lastTruckFilledBoxQuantity = $item['total_box_quantity'] - (($item['total_truck'] - 1) * $item['fillable_box_quantity_in_each_truck']);
-                            }
-                            $lastTruckOccupiedRow = $lastTruckFilledBoxQuantity / $item['box_contain_per_row'];
-                            // dump("lastTruckOccupiedRow : $lastTruckOccupiedRow");
-                            $lastTruckOccupiedRow = is_float($lastTruckOccupiedRow) ? intval($lastTruckOccupiedRow) + 1 : $lastTruckOccupiedRow;
-                            $lastTruckOccupiedLength = $lastTruckOccupiedRow * $boxDimension[0]; // ghfufuggjhghjghjfvhdfkhvjdfgvfvgdfgvdhgvds
-                            $lastTruckUnoccupiedLength = $truckDimension[0] - $lastTruckOccupiedLength;
-                            // dump(gettype($lastTruckOccupiedLength));
-                            // dump($lastTruckUnoccupiedLength);
+                $boxDim = explode('*', $cargoInfo['box_dimension']);
+                $boxLength = floatval($boxDim[0]);
+                // $arr = explode('.', $boxLength);
+                // $boxLength = $arr[0] + (0.1 * $arr[1]);
+                // dump(gettype($boxLength));
+                $boxWidth = $boxDim[1];
+                $boxHeight = $boxDim[2];
+                // dump($boxVolume);
 
-                            if (($boxWidth > $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow) && $boxQuantity > 0) {
-                                // $ifBoxCanFit = true;
-                                $boxLength = $tmpBoxWidth;
-                                $boxWidth = $tmpBoxLength;
+                $tmpFilteredTruckInfo = $filteredTruckInfo;
 
-                                $totalNoOfRow = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxLength);
+                foreach ($filteredTruckInfo as $tempKey => $item) {
+                    $prevBoxDim = explode('*', $item['used_box_dimension']);
+                    $truckDim = explode('*', $item['truck_dimension']);
+                    $truckLength = $truckDim[0];
+                    $truckWidth = $truckDim[1];
+                    $truckDimension = $truckLength . "*" . $truckWidth . "*" . $truckDim[2];
+                    // $tmpBoxQuantity = $boxQuantity = $this->cargoInfo[$cargoBoxkey]['quantity'];
+                    $tmpBoxQuantity = $boxQuantity = $cargoInfo['quantity'];
+                    // dump($item['total_truck']);
 
-                                $getFillableQuantity = $this->getFillableQuantity($totalNoOfRow, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
-                                $fillableQuantity += $getFillableQuantity["fillableQuantity"];
-                                $spaceInfo = $getFillableQuantity;
-                                $filledQuantityOnPrevUnoccupiedRowSpace = $fillableQuantity;
-                            } else if ((($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength > $emptySpaceOfLastFilledRow) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength == $boxWidth)) && $boxQuantity > 0) {
-                                // $ifBoxCanFit = true;
+                    if ($cargoInfo['quantity'] <= 0) {
+                        for ($i = 1; $i <= $item['total_truck']; $i++) {
+                            $boxDimension = explode('*', $item['used_box_dimension']);
+                            $truckDimension = explode('*', $item['truck_dimension']);
 
-                                $totalNoOfRow = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxLength);
+                            $emptySpacePerRow = $item['empty_space_per_row'];
+                            $emptySpaceOfLastFilledRow = $item['empty_space_of_last_filled_row'];
 
-                                $getFillableQuantity = $this->getFillableQuantity($totalNoOfRow, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
-                                $fillableQuantity += $getFillableQuantity["fillableQuantity"];
-                                $spaceInfo = $getFillableQuantity;
-                                $filledQuantityOnPrevUnoccupiedRowSpace = $fillableQuantity;
-                            } else if ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow && $boxLength != $boxWidth && $boxQuantity > 0) {
-                                // $ifBoxCanFit = true;
-
-                                $totalNoOfRowForLength = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxWidth);
-                                $getFillableQuantityForLength = $this->getFillableQuantity($totalNoOfRowForLength, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxWidth, $boxLength, $item['used_box_dimension']);
-                                $fillableQuantityForLength = $getFillableQuantityForLength["fillableQuantity"];
-
-                                $totalNoOfRowForWidth = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxLength);
-                                $getFillableQuantityForWidth = $this->getFillableQuantity($totalNoOfRowForWidth, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
-                                $fillableQuantityForWidth = $getFillableQuantityForWidth["fillableQuantity"];
-
-                                if ($fillableQuantityForWidth >= $fillableQuantityForLength) {
-                                    $fillableQuantity = $fillableQuantityForWidth;
-                                    $spaceInfo = $getFillableQuantityForWidth;
+                            if ($i == $item['total_truck']) {
+                                if ($item['total_truck'] == 1) {
+                                    $lastTruckFilledBoxQuantity = ($item['fillable_box_quantity_in_each_truck'] > $item['total_box_quantity']) ? $item['total_box_quantity'] : $item['fillable_box_quantity_in_each_truck'];
                                 } else {
-                                    $boxLength = $tmpBoxWidth;
-                                    $boxWidth = $tmpBoxLength;
-                                    $fillableQuantity = $fillableQuantityForLength;
-                                    $spaceInfo = $getFillableQuantityForLength;
+                                    $lastTruckFilledBoxQuantity = $item['total_box_quantity'] - (($item['total_truck'] - 1) * $item['fillable_box_quantity_in_each_truck']);
                                 }
-                                $filledQuantityOnPrevUnoccupiedRowSpace = $fillableQuantity;
+                                $lastTruckOccupiedRow = $lastTruckFilledBoxQuantity / $item['box_contain_per_row'];
+                                $lastTruckOccupiedRow = is_float($lastTruckOccupiedRow) ? intval($lastTruckOccupiedRow) + 1 : $lastTruckOccupiedRow;
+                                $lastTruckOccupiedLength = $lastTruckOccupiedRow * $boxDimension[0];
+                                $lastTruckUnoccupiedLength = $truckDimension[0] - $lastTruckOccupiedLength;
                             } else {
-                                $spaceInfo = [
-                                    "empty_space" => [
-                                        "fully_filled_row_total_length_empty_space" => $lastTruckOccupiedLength,
-                                        "fully_filled_row_empty_space" => $emptySpacePerRow,
-                                        "partially_filled_row_length_empty_space" => $emptySpaceOfLastFilledRow,
-                                        "partially_filled_row_empty_space" => $boxLength,
-                                    ]
-                                ];
+                                $lastTruckFilledBoxQuantity = $item['fillable_box_quantity_in_each_truck'];
+                                $lastTruckOccupiedRow = $item['fillable_row_in_each_truck'];
+                                $lastTruckOccupiedLength = $lastTruckOccupiedRow * $boxDimension[0];
+                                $lastTruckUnoccupiedLength = $truckDimension[0] - $lastTruckOccupiedLength;
                             }
 
-                            if ($filledQuantityOnPrevUnoccupiedRowSpace > 0) {
-                                $boxQuantityOnPartiallyFilledRow = $filledQuantity = ($fillableQuantity <= $boxQuantity) ? $fillableQuantity : $boxQuantity;
-                            }
-
-
-                            if (($boxWidth > $truckWidth && $boxLength <= $truckWidth) && $boxWidth <= $lastTruckUnoccupiedLength && $boxQuantity > 0) {
-                                $ifBoxCanFit = true;
-                                $tmpBoxWidth = $boxLength;
-                                $boxLength = $boxWidth;
-                                $boxWidth = $tmpBoxWidth;
-                                $boxContainPerRow = $truckDimension[1] / $boxWidth;
-                            } else if (($boxWidth <= $truckWidth && $boxLength <= $truckWidth) && ($boxWidth <= $lastTruckUnoccupiedLength && $boxLength <= $lastTruckUnoccupiedLength) && $boxLength != $boxWidth && $boxQuantity > 0) {
-                                $ifBoxCanFit = true;
-                                $boxContainPerRowForWidth = $this->getIntegerFromFloatingPoint($truckDimension[1] / $boxWidth);
-                                $boxContainPerRowForLength = $this->getIntegerFromFloatingPoint($truckDimension[1] / $boxLength);
-                                $fillableBoxQuantityForEachTruckForWidth = intval($lastTruckUnoccupiedLength / $boxLength) * $boxContainPerRowForWidth;
-                                $fillableBoxQuantityForEachTruckForLength = intval($lastTruckUnoccupiedLength / $boxWidth) * $boxContainPerRowForLength;
-
-                                if ($fillableBoxQuantityForEachTruckForWidth >= $fillableBoxQuantityForEachTruckForLength) {
-                                    $boxContainPerRow = $boxContainPerRowForWidth;
-                                } else {
-                                    $boxContainPerRow = $boxContainPerRowForLength;
-                                    $tmpBoxWidth = $boxLength;
-                                    $boxLength = $boxWidth;
-                                    $boxWidth = $tmpBoxWidth;
-                                }
-                            } else if ((($boxWidth <= $truckWidth && $boxLength > $truckWidth && $boxLength <= $lastTruckUnoccupiedLength) || ($boxWidth <= $truckWidth && $boxWidth > $lastTruckUnoccupiedLength && $boxLength <= $lastTruckUnoccupiedLength) || ($boxWidth <= $truckWidth && $boxLength <= $lastTruckUnoccupiedLength && $boxWidth == $boxLength) || ($boxWidth <= $truckWidth && $boxLength <= $lastTruckUnoccupiedLength)) && $boxQuantity > 0) {
-                                $ifBoxCanFit = true;
-                                $boxContainPerRow = $truckDimension[1] / $boxWidth;
-                            }
-
-                            if ($ifBoxCanFit) {
-                                if ($boxContainPerRow != 0) {
-                                    $totalRowNeededForContainingBox = $this->getIntegerFromFloatingPoint($boxQuantity / $boxContainPerRow);
-                                    $totalBoxLength = $totalRowNeededForContainingBox * $boxLength;
-
-                                    $availableTotalNoOfRow = intval($lastTruckUnoccupiedLength / $boxLength);
-                                    $fillableQuantity = ($availableTotalNoOfRow > $totalRowNeededForContainingBox) ? $totalRowNeededForContainingBox *  $boxContainPerRow : $availableTotalNoOfRow *  $boxContainPerRow;
-
-                                    $boxQuantityOnFullyUnfilledRow = $filledQuantity = ($fillableQuantity <= $boxQuantity) ? $fillableQuantity : $boxQuantity;
-                                    $filledQuantity = ($boxQuantityOnPartiallyFilledRow > 0) ? $filledQuantity + $boxQuantityOnPartiallyFilledRow : $filledQuantity;
-
-                                    $filledTotalNoOfRow = $boxQuantityOnFullyUnfilledRow / $boxContainPerRow;
-                                    $filledTotalNoOfRow = is_float($filledTotalNoOfRow) ? $this->getIntegerFromFloatingPoint($filledTotalNoOfRow) + 1 : $filledTotalNoOfRow;
-                                    $filledLength = $filledTotalNoOfRow * $boxLength;
-                                    // dump($lastTruckUnoccupiedLength);
-                                    // dump($filledLength);
-                                    $emptySpaceByLength = $lastTruckUnoccupiedLength - $filledLength;
-                                    $emptySpaceByWidth = ($emptySpaceByLength > 0) ? $truckWidth : 0;
-                                }
-                            } else {
-                                $emptySpaceByLength = $lastTruckUnoccupiedLength;
-                                $emptySpaceByWidth = ($emptySpaceByLength > 0) ? $truckWidth : 0;
-                            }
-
-                            // dump($boxQuantityOnPartiallyFilledRow);
-                            // dump($boxQuantityOnFullyUnfilledRow);
-                            $totalFilledBoxQuantity = ($boxQuantityOnFullyUnfilledRow + $boxQuantityOnPartiallyFilledRow > $boxQuantity) ? $boxQuantity : $boxQuantityOnFullyUnfilledRow + $boxQuantityOnPartiallyFilledRow;
-                            $boxQuantity -= $filledQuantity;
-                        } else {
-                            // $lastTruckFilledBoxQuantity = $item['total_box_quantity'] - $item['fillable_box_quantity_in_each_truck'];
-                            // $lastTruckOccupiedRow = $lastTruckFilledBoxQuantity / $item['box_contain_per_row'];
-                            $lastTruckFilledBoxQuantity = $item['fillable_box_quantity_in_each_truck'];
-                            $lastTruckOccupiedRow = $item['fillable_row_in_each_truck'];
-                            $lastTruckOccupiedLength = $lastTruckOccupiedRow * $boxDimension[0];
-                            $lastTruckUnoccupiedLength = $truckDimension[0] - $lastTruckOccupiedLength;
-                            // dump("lastTruckOccupiedRow: $lastTruckOccupiedRow boxLength: $boxDimension[0] lastTruckUnoccupiedLength: $lastTruckUnoccupiedLength truckLength: $truckDimension[0]");
-                            // dd($lastTruckOccupiedLength);
-                            // dump($truckDimension[0]);
-                            // dump($boxDimension[0]);
-                            // dump($lastTruckOccupiedRow);
-                            // dump($lastTruckOccupiedLength);
-                            // dump($lastTruckUnoccupiedLength);
-
-                            $boxContainPerRowInEmptySpace = $totalNoOfRow = 0;
-                            // dump($boxWidth);
-                            // dump($boxLength);
-                            // dump($emptySpacePerRow);
-                            // dd($boxQuantity);
-
-                            if (($boxWidth > $emptySpacePerRow && $boxLength <= $emptySpacePerRow) && $boxQuantity > 0) {
-                                // dd("1");
-                                $boxLength = $tmpBoxWidth;
-                                $boxWidth = $tmpBoxLength;
-
-                                $boxContainPerRowInEmptySpace = intval($emptySpacePerRow / $boxWidth);
-                                $totalNoOfRow = intval($lastTruckOccupiedLength / $boxLength);
-                                $fillableQuantity = $totalNoOfRow *  $boxContainPerRowInEmptySpace;
-                            } else if ((($boxWidth <= $emptySpacePerRow && $boxLength > $emptySpacePerRow) || ($boxWidth <= $emptySpacePerRow && $boxLength == $boxWidth)) && $boxQuantity > 0) {
-                                // dd("11");
-                                $boxContainPerRowInEmptySpace = intval($emptySpacePerRow / $boxWidth);
-                                $totalNoOfRow = intval($lastTruckOccupiedLength / $boxLength);
-                                $fillableQuantity = $totalNoOfRow *  $boxContainPerRowInEmptySpace;
-                            } else if ($boxWidth <= $emptySpacePerRow && $boxLength <= $emptySpacePerRow && $boxLength != $boxWidth && $boxQuantity > 0) {
-                                // dd("111");
-                                $boxContainPerRowInEmptySpaceForWidth = intval($emptySpacePerRow / $boxWidth);
-                                $totalNoOfRowForWidth = intval($lastTruckOccupiedLength / $boxLength);
-                                $fillableQuantityForWidth = $totalNoOfRowForWidth *  $boxContainPerRowInEmptySpaceForWidth;
-
-                                $boxContainPerRowInEmptySpaceForLength = intval($emptySpacePerRow / $boxLength);
-                                $totalNoOfRowForLength = intval($lastTruckOccupiedLength / $boxWidth);
-                                $fillableQuantityForLength = $totalNoOfRowForLength *  $boxContainPerRowInEmptySpaceForLength;
-
-                                if ($fillableQuantityForWidth >= $fillableQuantityForLength) {
-                                    $fillableQuantity = $fillableQuantityForWidth;
-                                    $totalNoOfRow = $totalNoOfRowForWidth;
-                                    $boxContainPerRowInEmptySpace = $boxContainPerRowInEmptySpaceForWidth;
-                                } else {
-                                    $boxLength = $tmpBoxWidth;
-                                    $boxWidth = $tmpBoxLength;
-                                    $fillableQuantity = $fillableQuantityForLength;
-                                    $totalNoOfRow = $totalNoOfRowForLength;
-                                    $boxContainPerRowInEmptySpace = $boxContainPerRowInEmptySpaceForLength;
-                                }
-                            }
-                            $newEmptySpacePerRow = ($boxContainPerRowInEmptySpace > 0) ? $emptySpacePerRow - $boxContainPerRowInEmptySpace * $boxWidth : $emptySpacePerRow;
-                            dump("totalNoOfRow: $totalNoOfRow boxLength: $boxLength");
-                            $spaceInfo = [
-                                "empty_space" => [
-                                    "fully_filled_row_total_length_empty_space" => ($fillableQuantity > 0) ? $totalNoOfRow * $boxLength : $lastTruckOccupiedLength,
-                                    "fully_filled_row_empty_space" => $newEmptySpacePerRow,
-                                    "partially_filled_row_length_empty_space" => null,
-                                    "partially_filled_row_empty_space" => null,
-                                ],
-                                "fillableQuantity" => $fillableQuantity
-                            ];
-                            // dd("1111");
-
-                            $filledQuantityOnPrevUnoccupiedRowSpace += $totalNoOfRow *  $boxContainPerRowInEmptySpace;
-                            if ($filledQuantityOnPrevUnoccupiedRowSpace > 0) {
-                                $boxQuantityOnPartiallyFilledRow = $filledQuantity = ($fillableQuantity <= $boxQuantity) ? $fillableQuantity : $boxQuantity;
-                            }
-
-                            if (($boxWidth > $truckWidth && $boxLength <= $truckWidth) && $boxWidth <= $lastTruckUnoccupiedLength && $boxQuantity > 0) {
-                                $ifBoxCanFit = true;
-                                $tmpBoxWidth = $boxLength;
-                                $boxLength = $boxWidth;
-                                $boxWidth = $tmpBoxWidth;
-                                $boxContainPerRow = $truckDimension[1] / $boxWidth;
-                            } else if (($boxWidth <= $truckWidth && $boxLength <= $truckWidth) && ($boxWidth <= $lastTruckUnoccupiedLength && $boxLength <= $lastTruckUnoccupiedLength) && $boxLength != $boxWidth && $boxQuantity > 0) {
-                                $ifBoxCanFit = true;
-                                $boxContainPerRowForWidth = $this->getIntegerFromFloatingPoint($truckDimension[1] / $boxWidth);
-                                $boxContainPerRowForLength = $this->getIntegerFromFloatingPoint($truckDimension[1] / $boxLength);
-                                $fillableBoxQuantityForEachTruckForWidth = intval($lastTruckUnoccupiedLength / $boxLength) * $boxContainPerRowForWidth;
-                                $fillableBoxQuantityForEachTruckForLength = intval($lastTruckUnoccupiedLength / $boxWidth) * $boxContainPerRowForLength;
-
-                                if ($fillableBoxQuantityForEachTruckForWidth >= $fillableBoxQuantityForEachTruckForLength) {
-                                    $boxContainPerRow = $boxContainPerRowForWidth;
-                                } else {
-                                    $boxContainPerRow = $boxContainPerRowForLength;
-                                    $tmpBoxWidth = $boxLength;
-                                    $boxLength = $boxWidth;
-                                    $boxWidth = $tmpBoxWidth;
-                                }
-                            } else if ((($boxWidth <= $truckWidth && $boxLength > $truckWidth && $boxLength <= $lastTruckUnoccupiedLength) || ($boxWidth <= $truckWidth && $boxWidth > $lastTruckUnoccupiedLength && $boxLength <= $lastTruckUnoccupiedLength) || ($boxWidth <= $truckWidth && $boxLength <= $lastTruckUnoccupiedLength && $boxWidth == $boxLength) || ($boxWidth <= $truckWidth && $boxLength <= $lastTruckUnoccupiedLength)) && $boxQuantity > 0) {
-                                $ifBoxCanFit = true;
-                                $boxContainPerRow = $truckDimension[1] / $boxWidth;
-                            }
-
-                            if ($ifBoxCanFit) {
-                                if ($boxContainPerRow != 0) {
-                                    $totalRowNeededForContainingBox = $boxQuantity / $boxContainPerRow;
-                                    $totalBoxLength = $totalRowNeededForContainingBox * $boxLength;
-
-                                    $availableTotalNoOfRow = intval($lastTruckUnoccupiedLength / $boxLength);
-                                    $fillableQuantity = ($availableTotalNoOfRow > $totalRowNeededForContainingBox) ? $totalRowNeededForContainingBox *  $boxContainPerRow : $availableTotalNoOfRow *  $boxContainPerRow;
-
-                                    $boxQuantityOnFullyUnfilledRow = $filledQuantity = ($fillableQuantity <= $boxQuantity) ? $fillableQuantity : $boxQuantity;
-                                    $filledQuantity = ($boxQuantityOnPartiallyFilledRow > 0) ? $filledQuantity + $boxQuantityOnPartiallyFilledRow : $filledQuantity;
-
-                                    $filledTotalNoOfRow = $boxQuantityOnFullyUnfilledRow / $boxContainPerRow;
-                                    $filledTotalNoOfRow = is_float($filledTotalNoOfRow) ? $this->getIntegerFromFloatingPoint($filledTotalNoOfRow) + 1 : $filledTotalNoOfRow;
-                                    $filledLength = $filledTotalNoOfRow * $boxLength;
-                                    // dump($lastTruckUnoccupiedLength);
-                                    // dump($filledLength);
-                                    $emptySpaceByLength = $lastTruckUnoccupiedLength - $filledLength;
-                                    $emptySpaceByWidth = ($emptySpaceByLength > 0) ? $truckWidth : 0;
-                                }
-                            } else {
-                                $emptySpaceByLength = $lastTruckUnoccupiedLength;
-                                $emptySpaceByWidth = ($emptySpaceByLength > 0) ? $truckWidth : 0;
-                            }
-
-                            // dd($filledQuantity);
-                            $totalFilledBoxQuantity = ($boxQuantityOnFullyUnfilledRow + $boxQuantityOnPartiallyFilledRow > $boxQuantity) ? $boxQuantity : $boxQuantityOnFullyUnfilledRow + $boxQuantityOnPartiallyFilledRow;
-                            $boxQuantity -= $filledQuantity;
-                        }
-                        // dd($filteredTruckInfo[$tempKey]);
-                        if ($lasCargoBox == true || $filledQuantity == 0) {
                             $tmpFilteredTruckInfo[$tempKey]["other_box_load_info"][] = [
                                 "truckArrTempKey" => null,
                                 "cargoArrTempKey" => null,
@@ -906,69 +682,336 @@ class FetchDataController extends Controller
                                 "total_filled_box_quantity" => null,
                                 "fillable_row_in_each_truck" => null
                             ];
-                        } else {
-                            $tmpFilteredTruckInfo[$tempKey]["other_box_load_info"][] = [
-                                "truckArrTempKey" => $tempKey,
-                                "cargoArrTempKey" => '',
-                                // "box_dimension" => ($filledQuantity != 0) ? $this->cargoInfo[$cargoBoxkey]['box_dimension'] : null,
-                                // "total_box_quantity" => ($filledQuantity != 0) ? (($i == 1) ? $this->cargoInfo[$cargoBoxkey]['quantity'] : $tmpBoxQuantity) : null,
-                                "box_dimension" => ($filledQuantity != 0) ? $cargoInfo['box_dimension'] : null,
-                                "used_box_dimension" => $boxLength . "*" . $boxWidth . "*" . $boxHeight,
-                                "total_box_quantity" => ($filledQuantity != 0) ? (($i == 1) ? $cargoInfo['quantity'] : $tmpBoxQuantity) : null,
-                                "can_contain_total_box_on_partially_filled_row" => $boxQuantityOnPartiallyFilledRow,
-                                "can_contain_total_box_on_fully_unfilled_row" => intval($availableTotalNoOfRow * $boxContainPerRow),
-                                "can_contain_box_on_a_fully_unfilled_row" => $boxContainPerRow,
-                                "total_filled_box_quantity" => $totalFilledBoxQuantity,
-                                "fillable_row_in_each_truck" => $availableTotalNoOfRow
+                            $tmpFilteredTruckInfo[$tempKey]["truck_space"][] = [
+                                "fully_filled_row_total_length_empty_space" => $lastTruckOccupiedLength,
+                                "fully_filled_row_empty_space" => $emptySpacePerRow,
+                                "partially_filled_row_length_empty_space" => ($i == $item['total_truck']) ? $emptySpaceOfLastFilledRow : null,
+                                "partially_filled_row_empty_space" => ($i == $item['total_truck']) ? $boxLength : null,
+                                "fully_unfilled_total_empty_space_by_length" => $lastTruckUnoccupiedLength,
+                                "fully_unfilled_empty_space_by_width" => $truckWidth,
                             ];
                         }
-                        // dump("printing truck space");
-                        $tmpFilteredTruckInfo[$tempKey]["truck_space"][] = [
-                            "fully_filled_row_total_length_empty_space" => ($spaceInfo != null) ? $spaceInfo['empty_space']['fully_filled_row_total_length_empty_space'] : null,
-                            "fully_filled_row_empty_space" => ($spaceInfo != null) ? $spaceInfo['empty_space']['fully_filled_row_empty_space'] : null,
-                            "partially_filled_row_length_empty_space" => ($spaceInfo != null) ? $spaceInfo['empty_space']['partially_filled_row_length_empty_space'] : null,
-                            "partially_filled_row_empty_space" => ($spaceInfo != null) ? $spaceInfo['empty_space']['partially_filled_row_empty_space'] : null,
-                            "fully_unfilled_total_empty_space_by_length" => $emptySpaceByLength,
-                            "fully_unfilled_empty_space_by_width" => $emptySpaceByWidth,
-                        ];
-                        $tmpBoxQuantity = $boxQuantity;
-                        // dump($boxQuantity);
+                    } else {
+                        for ($i = 1; $i <= $item['total_truck']; $i++) {
+                            // dump($cargoInfo['quantity']);
+                            $fillableQuantity = $filledQuantity = $boxContainPerRow = $filledQuantityOnPrevUnoccupiedRowSpace = $boxQuantityOnFullyUnfilledRow = $boxQuantityOnPartiallyFilledRow = 0;
+                            $availableTotalNoOfRow = 0;
+                            $emptySpaceByLength = $emptySpaceByWidth = 0;
+                            $boxDimension = explode('*', $item['used_box_dimension']);
+                            $truckDimension = explode('*', $item['truck_dimension']);
+
+                            $emptySpacePerRow = $item['empty_space_per_row'];
+                            $emptySpaceOfLastFilledRow = $item['empty_space_of_last_filled_row'];
+                            $ifBoxCanFit = false;
+                            $tmpBoxLength = $boxLength;
+                            $tmpBoxWidth = $boxWidth;
+                            $spaceInfo = null;
+
+                            if ($i == $item['total_truck']) {
+                                if ($item['total_truck'] == 1) {
+                                    $lastTruckFilledBoxQuantity = ($item['fillable_box_quantity_in_each_truck'] > $item['total_box_quantity']) ? $item['total_box_quantity'] : $item['fillable_box_quantity_in_each_truck'];
+                                } else {
+                                    $lastTruckFilledBoxQuantity = $item['total_box_quantity'] - (($item['total_truck'] - 1) * $item['fillable_box_quantity_in_each_truck']);
+                                }
+                                $lastTruckOccupiedRow = $lastTruckFilledBoxQuantity / $item['box_contain_per_row'];
+                                // dump("lastTruckOccupiedRow : $lastTruckOccupiedRow");
+                                $lastTruckOccupiedRow = is_float($lastTruckOccupiedRow) ? intval($lastTruckOccupiedRow) + 1 : $lastTruckOccupiedRow;
+                                $lastTruckOccupiedLength = $lastTruckOccupiedRow * $boxDimension[0]; // ghfufuggjhghjghjfvhdfkhvjdfgvfvgdfgvdhgvds
+                                $lastTruckUnoccupiedLength = $truckDimension[0] - $lastTruckOccupiedLength;
+                                // dump(gettype($lastTruckOccupiedLength));
+                                // dump($lastTruckUnoccupiedLength);
+
+                                if (($boxWidth > $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow) && $boxQuantity > 0) {
+                                    // $ifBoxCanFit = true;
+                                    $boxLength = $tmpBoxWidth;
+                                    $boxWidth = $tmpBoxLength;
+
+                                    $totalNoOfRow = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxLength);
+
+                                    $getFillableQuantity = $this->getFillableQuantity($totalNoOfRow, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
+                                    $fillableQuantity += $getFillableQuantity["fillableQuantity"];
+                                    $spaceInfo = $getFillableQuantity;
+                                    $filledQuantityOnPrevUnoccupiedRowSpace = $fillableQuantity;
+                                } else if ((($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength > $emptySpaceOfLastFilledRow) || ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength == $boxWidth)) && $boxQuantity > 0) {
+                                    // $ifBoxCanFit = true;
+
+                                    $totalNoOfRow = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxLength);
+
+                                    $getFillableQuantity = $this->getFillableQuantity($totalNoOfRow, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
+                                    $fillableQuantity += $getFillableQuantity["fillableQuantity"];
+                                    $spaceInfo = $getFillableQuantity;
+                                    $filledQuantityOnPrevUnoccupiedRowSpace = $fillableQuantity;
+                                } else if ($boxWidth <= $emptySpaceOfLastFilledRow && $boxLength <= $emptySpaceOfLastFilledRow && $boxLength != $boxWidth && $boxQuantity > 0) {
+                                    // $ifBoxCanFit = true;
+
+                                    $totalNoOfRowForLength = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxWidth);
+                                    $getFillableQuantityForLength = $this->getFillableQuantity($totalNoOfRowForLength, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxWidth, $boxLength, $item['used_box_dimension']);
+                                    $fillableQuantityForLength = $getFillableQuantityForLength["fillableQuantity"];
+
+                                    $totalNoOfRowForWidth = $this->getIntegerFromFloatingPoint($lastTruckOccupiedLength / $boxLength);
+                                    $getFillableQuantityForWidth = $this->getFillableQuantity($totalNoOfRowForWidth, $emptySpaceOfLastFilledRow, $emptySpacePerRow, $boxLength, $boxWidth, $item['used_box_dimension']);
+                                    $fillableQuantityForWidth = $getFillableQuantityForWidth["fillableQuantity"];
+
+                                    if ($fillableQuantityForWidth >= $fillableQuantityForLength) {
+                                        $fillableQuantity = $fillableQuantityForWidth;
+                                        $spaceInfo = $getFillableQuantityForWidth;
+                                    } else {
+                                        $boxLength = $tmpBoxWidth;
+                                        $boxWidth = $tmpBoxLength;
+                                        $fillableQuantity = $fillableQuantityForLength;
+                                        $spaceInfo = $getFillableQuantityForLength;
+                                    }
+                                    $filledQuantityOnPrevUnoccupiedRowSpace = $fillableQuantity;
+                                } else {
+                                    $spaceInfo = [
+                                        "empty_space" => [
+                                            "fully_filled_row_total_length_empty_space" => $lastTruckOccupiedLength,
+                                            "fully_filled_row_empty_space" => $emptySpacePerRow,
+                                            "partially_filled_row_length_empty_space" => $emptySpaceOfLastFilledRow,
+                                            "partially_filled_row_empty_space" => $boxLength,
+                                        ]
+                                    ];
+                                }
+
+                                if ($filledQuantityOnPrevUnoccupiedRowSpace > 0) {
+                                    $boxQuantityOnPartiallyFilledRow = $filledQuantity = ($fillableQuantity <= $boxQuantity) ? $fillableQuantity : $boxQuantity;
+                                }
+
+
+                                if (($boxWidth > $truckWidth && $boxLength <= $truckWidth) && $boxWidth <= $lastTruckUnoccupiedLength && $boxQuantity > 0) {
+                                    $ifBoxCanFit = true;
+                                    $tmpBoxWidth = $boxLength;
+                                    $boxLength = $boxWidth;
+                                    $boxWidth = $tmpBoxWidth;
+                                    $boxContainPerRow = $truckDimension[1] / $boxWidth;
+                                } else if (($boxWidth <= $truckWidth && $boxLength <= $truckWidth) && ($boxWidth <= $lastTruckUnoccupiedLength && $boxLength <= $lastTruckUnoccupiedLength) && $boxLength != $boxWidth && $boxQuantity > 0) {
+                                    $ifBoxCanFit = true;
+                                    $boxContainPerRowForWidth = $this->getIntegerFromFloatingPoint($truckDimension[1] / $boxWidth);
+                                    $boxContainPerRowForLength = $this->getIntegerFromFloatingPoint($truckDimension[1] / $boxLength);
+                                    $fillableBoxQuantityForEachTruckForWidth = intval($lastTruckUnoccupiedLength / $boxLength) * $boxContainPerRowForWidth;
+                                    $fillableBoxQuantityForEachTruckForLength = intval($lastTruckUnoccupiedLength / $boxWidth) * $boxContainPerRowForLength;
+
+                                    if ($fillableBoxQuantityForEachTruckForWidth >= $fillableBoxQuantityForEachTruckForLength) {
+                                        $boxContainPerRow = $boxContainPerRowForWidth;
+                                    } else {
+                                        $boxContainPerRow = $boxContainPerRowForLength;
+                                        $tmpBoxWidth = $boxLength;
+                                        $boxLength = $boxWidth;
+                                        $boxWidth = $tmpBoxWidth;
+                                    }
+                                } else if ((($boxWidth <= $truckWidth && $boxLength > $truckWidth && $boxLength <= $lastTruckUnoccupiedLength) || ($boxWidth <= $truckWidth && $boxWidth > $lastTruckUnoccupiedLength && $boxLength <= $lastTruckUnoccupiedLength) || ($boxWidth <= $truckWidth && $boxLength <= $lastTruckUnoccupiedLength && $boxWidth == $boxLength) || ($boxWidth <= $truckWidth && $boxLength <= $lastTruckUnoccupiedLength)) && $boxQuantity > 0) {
+                                    $ifBoxCanFit = true;
+                                    $boxContainPerRow = $truckDimension[1] / $boxWidth;
+                                }
+
+                                if ($ifBoxCanFit) {
+                                    if ($boxContainPerRow != 0) {
+                                        $totalRowNeededForContainingBox = $this->getIntegerFromFloatingPoint($boxQuantity / $boxContainPerRow);
+                                        $totalBoxLength = $totalRowNeededForContainingBox * $boxLength;
+
+                                        $availableTotalNoOfRow = intval($lastTruckUnoccupiedLength / $boxLength);
+                                        $fillableQuantity = ($availableTotalNoOfRow > $totalRowNeededForContainingBox) ? $totalRowNeededForContainingBox *  $boxContainPerRow : $availableTotalNoOfRow *  $boxContainPerRow;
+
+                                        $boxQuantityOnFullyUnfilledRow = $filledQuantity = ($fillableQuantity <= $boxQuantity) ? $fillableQuantity : $boxQuantity;
+                                        $filledQuantity = ($boxQuantityOnPartiallyFilledRow > 0) ? $filledQuantity + $boxQuantityOnPartiallyFilledRow : $filledQuantity;
+
+                                        $filledTotalNoOfRow = $boxQuantityOnFullyUnfilledRow / $boxContainPerRow;
+                                        $filledTotalNoOfRow = is_float($filledTotalNoOfRow) ? $this->getIntegerFromFloatingPoint($filledTotalNoOfRow) + 1 : $filledTotalNoOfRow;
+                                        $filledLength = $filledTotalNoOfRow * $boxLength;
+                                        // dump($lastTruckUnoccupiedLength);
+                                        // dump($filledLength);
+                                        $emptySpaceByLength = $lastTruckUnoccupiedLength - $filledLength;
+                                        $emptySpaceByWidth = ($emptySpaceByLength > 0) ? $truckWidth : 0;
+                                    }
+                                } else {
+                                    $emptySpaceByLength = $lastTruckUnoccupiedLength;
+                                    $emptySpaceByWidth = ($emptySpaceByLength > 0) ? $truckWidth : 0;
+                                }
+
+                                // dump($boxQuantityOnPartiallyFilledRow);
+                                // dump($boxQuantityOnFullyUnfilledRow);
+                                $totalFilledBoxQuantity = ($boxQuantityOnFullyUnfilledRow + $boxQuantityOnPartiallyFilledRow > $boxQuantity) ? $boxQuantity : $boxQuantityOnFullyUnfilledRow + $boxQuantityOnPartiallyFilledRow;
+                                $boxQuantity -= $filledQuantity;
+                            } else {
+                                // $lastTruckFilledBoxQuantity = $item['total_box_quantity'] - $item['fillable_box_quantity_in_each_truck'];
+                                // $lastTruckOccupiedRow = $lastTruckFilledBoxQuantity / $item['box_contain_per_row'];
+                                $lastTruckFilledBoxQuantity = $item['fillable_box_quantity_in_each_truck'];
+                                $lastTruckOccupiedRow = $item['fillable_row_in_each_truck'];
+                                $lastTruckOccupiedLength = $lastTruckOccupiedRow * $boxDimension[0];
+                                $lastTruckUnoccupiedLength = $truckDimension[0] - $lastTruckOccupiedLength;
+                                // dump("lastTruckOccupiedRow: $lastTruckOccupiedRow boxLength: $boxDimension[0] lastTruckUnoccupiedLength: $lastTruckUnoccupiedLength truckLength: $truckDimension[0]");
+                                // dd($lastTruckOccupiedLength);
+                                // dump($truckDimension[0]);
+                                // dump($boxDimension[0]);
+                                // dump($lastTruckOccupiedRow);
+                                // dump($lastTruckOccupiedLength);
+                                // dump($lastTruckUnoccupiedLength);
+
+                                $boxContainPerRowInEmptySpace = $totalNoOfRow = 0;
+                                // dump($boxWidth);
+                                // dump($boxLength);
+                                // dump($emptySpacePerRow);
+                                // dd($boxQuantity);
+
+                                if (($boxWidth > $emptySpacePerRow && $boxLength <= $emptySpacePerRow) && $boxQuantity > 0) {
+                                    // dd("1");
+                                    $boxLength = $tmpBoxWidth;
+                                    $boxWidth = $tmpBoxLength;
+
+                                    $boxContainPerRowInEmptySpace = intval($emptySpacePerRow / $boxWidth);
+                                    $totalNoOfRow = intval($lastTruckOccupiedLength / $boxLength);
+                                    $fillableQuantity = $totalNoOfRow *  $boxContainPerRowInEmptySpace;
+                                } else if ((($boxWidth <= $emptySpacePerRow && $boxLength > $emptySpacePerRow) || ($boxWidth <= $emptySpacePerRow && $boxLength == $boxWidth)) && $boxQuantity > 0) {
+                                    // dd("11");
+                                    $boxContainPerRowInEmptySpace = intval($emptySpacePerRow / $boxWidth);
+                                    $totalNoOfRow = intval($lastTruckOccupiedLength / $boxLength);
+                                    $fillableQuantity = $totalNoOfRow *  $boxContainPerRowInEmptySpace;
+                                } else if ($boxWidth <= $emptySpacePerRow && $boxLength <= $emptySpacePerRow && $boxLength != $boxWidth && $boxQuantity > 0) {
+                                    // dd("111");
+                                    $boxContainPerRowInEmptySpaceForWidth = intval($emptySpacePerRow / $boxWidth);
+                                    $totalNoOfRowForWidth = intval($lastTruckOccupiedLength / $boxLength);
+                                    $fillableQuantityForWidth = $totalNoOfRowForWidth *  $boxContainPerRowInEmptySpaceForWidth;
+
+                                    $boxContainPerRowInEmptySpaceForLength = intval($emptySpacePerRow / $boxLength);
+                                    $totalNoOfRowForLength = intval($lastTruckOccupiedLength / $boxWidth);
+                                    $fillableQuantityForLength = $totalNoOfRowForLength *  $boxContainPerRowInEmptySpaceForLength;
+
+                                    if ($fillableQuantityForWidth >= $fillableQuantityForLength) {
+                                        $fillableQuantity = $fillableQuantityForWidth;
+                                        $totalNoOfRow = $totalNoOfRowForWidth;
+                                        $boxContainPerRowInEmptySpace = $boxContainPerRowInEmptySpaceForWidth;
+                                    } else {
+                                        $boxLength = $tmpBoxWidth;
+                                        $boxWidth = $tmpBoxLength;
+                                        $fillableQuantity = $fillableQuantityForLength;
+                                        $totalNoOfRow = $totalNoOfRowForLength;
+                                        $boxContainPerRowInEmptySpace = $boxContainPerRowInEmptySpaceForLength;
+                                    }
+                                }
+                                $newEmptySpacePerRow = ($boxContainPerRowInEmptySpace > 0) ? $emptySpacePerRow - $boxContainPerRowInEmptySpace * $boxWidth : $emptySpacePerRow;
+                                dump("totalNoOfRow: $totalNoOfRow boxLength: $boxLength");
+                                $spaceInfo = [
+                                    "empty_space" => [
+                                        "fully_filled_row_total_length_empty_space" => ($fillableQuantity > 0) ? $totalNoOfRow * $boxLength : $lastTruckOccupiedLength,
+                                        "fully_filled_row_empty_space" => $newEmptySpacePerRow,
+                                        "partially_filled_row_length_empty_space" => null,
+                                        "partially_filled_row_empty_space" => null,
+                                    ],
+                                    "fillableQuantity" => $fillableQuantity
+                                ];
+                                // dd("1111");
+
+                                $filledQuantityOnPrevUnoccupiedRowSpace += $totalNoOfRow *  $boxContainPerRowInEmptySpace;
+                                if ($filledQuantityOnPrevUnoccupiedRowSpace > 0) {
+                                    $boxQuantityOnPartiallyFilledRow = $filledQuantity = ($fillableQuantity <= $boxQuantity) ? $fillableQuantity : $boxQuantity;
+                                }
+
+                                if (($boxWidth > $truckWidth && $boxLength <= $truckWidth) && $boxWidth <= $lastTruckUnoccupiedLength && $boxQuantity > 0) {
+                                    $ifBoxCanFit = true;
+                                    $tmpBoxWidth = $boxLength;
+                                    $boxLength = $boxWidth;
+                                    $boxWidth = $tmpBoxWidth;
+                                    $boxContainPerRow = $truckDimension[1] / $boxWidth;
+                                } else if (($boxWidth <= $truckWidth && $boxLength <= $truckWidth) && ($boxWidth <= $lastTruckUnoccupiedLength && $boxLength <= $lastTruckUnoccupiedLength) && $boxLength != $boxWidth && $boxQuantity > 0) {
+                                    $ifBoxCanFit = true;
+                                    $boxContainPerRowForWidth = $this->getIntegerFromFloatingPoint($truckDimension[1] / $boxWidth);
+                                    $boxContainPerRowForLength = $this->getIntegerFromFloatingPoint($truckDimension[1] / $boxLength);
+                                    $fillableBoxQuantityForEachTruckForWidth = intval($lastTruckUnoccupiedLength / $boxLength) * $boxContainPerRowForWidth;
+                                    $fillableBoxQuantityForEachTruckForLength = intval($lastTruckUnoccupiedLength / $boxWidth) * $boxContainPerRowForLength;
+
+                                    if ($fillableBoxQuantityForEachTruckForWidth >= $fillableBoxQuantityForEachTruckForLength) {
+                                        $boxContainPerRow = $boxContainPerRowForWidth;
+                                    } else {
+                                        $boxContainPerRow = $boxContainPerRowForLength;
+                                        $tmpBoxWidth = $boxLength;
+                                        $boxLength = $boxWidth;
+                                        $boxWidth = $tmpBoxWidth;
+                                    }
+                                } else if ((($boxWidth <= $truckWidth && $boxLength > $truckWidth && $boxLength <= $lastTruckUnoccupiedLength) || ($boxWidth <= $truckWidth && $boxWidth > $lastTruckUnoccupiedLength && $boxLength <= $lastTruckUnoccupiedLength) || ($boxWidth <= $truckWidth && $boxLength <= $lastTruckUnoccupiedLength && $boxWidth == $boxLength) || ($boxWidth <= $truckWidth && $boxLength <= $lastTruckUnoccupiedLength)) && $boxQuantity > 0) {
+                                    $ifBoxCanFit = true;
+                                    $boxContainPerRow = $truckDimension[1] / $boxWidth;
+                                }
+
+                                if ($ifBoxCanFit) {
+                                    if ($boxContainPerRow != 0) {
+                                        $totalRowNeededForContainingBox = $boxQuantity / $boxContainPerRow;
+                                        $totalBoxLength = $totalRowNeededForContainingBox * $boxLength;
+
+                                        $availableTotalNoOfRow = intval($lastTruckUnoccupiedLength / $boxLength);
+                                        $fillableQuantity = ($availableTotalNoOfRow > $totalRowNeededForContainingBox) ? $totalRowNeededForContainingBox *  $boxContainPerRow : $availableTotalNoOfRow *  $boxContainPerRow;
+
+                                        $boxQuantityOnFullyUnfilledRow = $filledQuantity = ($fillableQuantity <= $boxQuantity) ? $fillableQuantity : $boxQuantity;
+                                        $filledQuantity = ($boxQuantityOnPartiallyFilledRow > 0) ? $filledQuantity + $boxQuantityOnPartiallyFilledRow : $filledQuantity;
+
+                                        $filledTotalNoOfRow = $boxQuantityOnFullyUnfilledRow / $boxContainPerRow;
+                                        $filledTotalNoOfRow = is_float($filledTotalNoOfRow) ? $this->getIntegerFromFloatingPoint($filledTotalNoOfRow) + 1 : $filledTotalNoOfRow;
+                                        $filledLength = $filledTotalNoOfRow * $boxLength;
+                                        // dump($lastTruckUnoccupiedLength);
+                                        // dump($filledLength);
+                                        $emptySpaceByLength = $lastTruckUnoccupiedLength - $filledLength;
+                                        $emptySpaceByWidth = ($emptySpaceByLength > 0) ? $truckWidth : 0;
+                                    }
+                                } else {
+                                    $emptySpaceByLength = $lastTruckUnoccupiedLength;
+                                    $emptySpaceByWidth = ($emptySpaceByLength > 0) ? $truckWidth : 0;
+                                }
+
+                                // dd($filledQuantity);
+                                $totalFilledBoxQuantity = ($boxQuantityOnFullyUnfilledRow + $boxQuantityOnPartiallyFilledRow > $boxQuantity) ? $boxQuantity : $boxQuantityOnFullyUnfilledRow + $boxQuantityOnPartiallyFilledRow;
+                                $boxQuantity -= $filledQuantity;
+                            }
+                            // dd($filteredTruckInfo[$tempKey]);
+                            if ($lasCargoBox == true || $filledQuantity == 0) {
+                                $tmpFilteredTruckInfo[$tempKey]["other_box_load_info"][] = [
+                                    "truckArrTempKey" => null,
+                                    "cargoArrTempKey" => null,
+                                    "box_dimension" => null,
+                                    "used_box_dimension" => null,
+                                    "total_box_quantity" => null,
+                                    "can_contain_total_box_on_partially_filled_row" => null,
+                                    "can_contain_total_box_on_fully_unfilled_row" => null,
+                                    "can_contain_box_on_a_fully_unfilled_row" => null,
+                                    "total_filled_box_quantity" => null,
+                                    "fillable_row_in_each_truck" => null
+                                ];
+                            } else {
+                                $tmpFilteredTruckInfo[$tempKey]["other_box_load_info"][] = [
+                                    "truckArrTempKey" => $tempKey,
+                                    "cargoArrTempKey" => '',
+                                    // "box_dimension" => ($filledQuantity != 0) ? $this->cargoInfo[$cargoBoxkey]['box_dimension'] : null,
+                                    // "total_box_quantity" => ($filledQuantity != 0) ? (($i == 1) ? $this->cargoInfo[$cargoBoxkey]['quantity'] : $tmpBoxQuantity) : null,
+                                    "box_dimension" => ($filledQuantity != 0) ? $cargoInfo['box_dimension'] : null,
+                                    "used_box_dimension" => $boxLength . "*" . $boxWidth . "*" . $boxHeight,
+                                    "total_box_quantity" => ($filledQuantity != 0) ? (($i == 1) ? $cargoInfo['quantity'] : $tmpBoxQuantity) : null,
+                                    "can_contain_total_box_on_partially_filled_row" => $boxQuantityOnPartiallyFilledRow,
+                                    "can_contain_total_box_on_fully_unfilled_row" => intval($availableTotalNoOfRow * $boxContainPerRow),
+                                    "can_contain_box_on_a_fully_unfilled_row" => $boxContainPerRow,
+                                    "total_filled_box_quantity" => $totalFilledBoxQuantity,
+                                    "fillable_row_in_each_truck" => $availableTotalNoOfRow
+                                ];
+                            }
+                            // dump("printing truck space");
+                            $tmpFilteredTruckInfo[$tempKey]["truck_space"][] = [
+                                "fully_filled_row_total_length_empty_space" => ($spaceInfo != null) ? $spaceInfo['empty_space']['fully_filled_row_total_length_empty_space'] : null,
+                                "fully_filled_row_empty_space" => ($spaceInfo != null) ? $spaceInfo['empty_space']['fully_filled_row_empty_space'] : null,
+                                "partially_filled_row_length_empty_space" => ($spaceInfo != null) ? $spaceInfo['empty_space']['partially_filled_row_length_empty_space'] : null,
+                                "partially_filled_row_empty_space" => ($spaceInfo != null) ? $spaceInfo['empty_space']['partially_filled_row_empty_space'] : null,
+                                "fully_unfilled_total_empty_space_by_length" => $emptySpaceByLength,
+                                "fully_unfilled_empty_space_by_width" => $emptySpaceByWidth,
+                            ];
+                            $tmpBoxQuantity = $boxQuantity;
+                            // dump($boxQuantity);
+                        }
                     }
                 }
+                // }
+                dump($tmpFilteredTruckInfo);
+
+                $maxFilledBoxTruckKey = $this->getMaxFilledBoxTruckKey($tmpFilteredTruckInfo);
+                $selectedTempTruck = $tmpFilteredTruckInfo[$maxFilledBoxTruckKey];
+                dump($selectedTempTruck);
+                $tmpSelectedTempTruck[] = $selectedTempTruck;
             }
-            // }
-            dump($tmpFilteredTruckInfo);
-
-            $maxFilledBoxQuantity = $maxFilledBoxTruckKey = $maxFullyUnfilledTotalEmptySpaceByLength = null;
-            foreach ($tmpFilteredTruckInfo as $tempKey => $item) {
-                $truckItem = $item;
-                $count = $truckItem['total_truck'];
-                if ($count > 1) {
-                    $excludedIndexes = [$count - 1]; // Replace with the indexes you want to exclude
-                    foreach ($excludedIndexes as $excludeIndex) {
-                        unset($truckItem['individual_truck'][$excludeIndex]);
-                        unset($truckItem['other_box_load_info'][$excludeIndex]);
-                    }
-                }
-                $individualTruckTotal = array_sum(array_column($truckItem['individual_truck'], 'total_filled_box_quantity'));
-                $otherBoxTotal = array_sum(array_column($truckItem['other_box_load_info'], 'total_filled_box_quantity'));
-
-                $totalFilledBox = $individualTruckTotal + $otherBoxTotal;
-
-                $fullyUnfilledTotalEmptySpaceByLength = array_sum(array_column($item['truck_space'], 'fully_unfilled_total_empty_space_by_length'));
-                // dump("fullyUnfilledTotalEmptySpaceByLength: $fullyUnfilledTotalEmptySpaceByLength");
-
-                if ($totalFilledBox == $maxFilledBoxQuantity && $fullyUnfilledTotalEmptySpaceByLength < $maxFullyUnfilledTotalEmptySpaceByLength) {
-                    $maxFilledBoxTruckKey = $tempKey;
-                } elseif ($totalFilledBox > $maxFilledBoxQuantity) {
-                    $maxFilledBoxQuantity = $totalFilledBox;
-                    $maxFullyUnfilledTotalEmptySpaceByLength = $fullyUnfilledTotalEmptySpaceByLength;
-                    $maxFilledBoxTruckKey = $tempKey;
-                }
-            }
-            $selectedTempTruck = $tmpFilteredTruckInfo[$maxFilledBoxTruckKey];
-            dump($selectedTempTruck);
-            $tmpSelectedTempTruck[] = $selectedTempTruck;
         }
         // log::info(json_encode($tmpSelectedTempTruck));
         // dump($tmpSelectedTempTruck);
@@ -981,46 +1024,9 @@ class FetchDataController extends Controller
         $tmpTruckSelectionArr = [];
 
         if ($tmpSelectedTempTruckCount > 1) {
-            foreach ($tmpSelectedTempTruck as $index => $item) {
-                $truckItem = $item;
-                $count = $truckItem['total_truck'];
-                if ($count > 1) {
-                    $excludedIndexes = [$count - 1]; // Replace with the indexes you want to exclude
-                    foreach ($excludedIndexes as $excludeIndex) {
-                        unset($truckItem['individual_truck'][$excludeIndex]);
-                        unset($truckItem['other_box_load_info'][$excludeIndex]);
-                    }
-                }
-                $individualTruckTotal = array_sum(array_column($truckItem['individual_truck'], 'total_filled_box_quantity'));
-                $otherBoxTotal = array_sum(array_column($truckItem['other_box_load_info'], 'total_filled_box_quantity'));
-
-                $totalFilledBox = $individualTruckTotal + $otherBoxTotal;
-
-                // $truckSpaceTotal = [
-                //     'fully_filled_row_total_length_empty_space' => $truckItem['truck_space']['fully_filled_row_total_length_empty_space'],
-                //     'fully_filled_row_empty_space' => $truckItem['truck_space']['fully_filled_row_empty_space'],
-                //     'partially_filled_row_length_empty_space' => $truckItem['truck_space']['partially_filled_row_length_empty_space'],
-                //     'partially_filled_row_empty_space' => $truckItem['truck_space']['partially_filled_row_empty_space'],
-                //     'fully_unfilled_total_empty_space_by_length' => $truckItem['truck_space']['fully_unfilled_total_empty_space_by_length'],
-                //     'fully_unfilled_empty_space_by_width' => $truckItem['truck_space']['fully_unfilled_empty_space_by_width'],
-                // ];
-
-                // $fullyUnfilledTotalEmptySpaceByLength = $truckItem['truck_space']['fully_unfilled_total_empty_space_by_length'];
-                $fullyUnfilledTotalEmptySpaceByLength = array_sum(array_column($truckItem['truck_space'], 'fully_unfilled_total_empty_space_by_length'));
-                // dump($tmpSelectedTempTruck);
-                // dump("fullyUnfilledTotalEmptySpaceByLength: $fullyUnfilledTotalEmptySpaceByLength");
-
-                // and find the highest total_filled_box value and its array index
-                if ($totalFilledBox == $maxTotalFilledBox && $fullyUnfilledTotalEmptySpaceByLength < $maxFullyUnfilledTotalEmptySpaceByLength) {
-                    $maxIndex = $index;
-                } elseif ($totalFilledBox > $maxTotalFilledBox) {
-                    $maxTotalFilledBox = $totalFilledBox;
-                    $maxFullyUnfilledTotalEmptySpaceByLength = $fullyUnfilledTotalEmptySpaceByLength;
-                    $maxIndex = $index;
-                }
-                dump($maxIndex);
-                dump("individualTruckTotal: $individualTruckTotal otherBoxTotal: $otherBoxTotal totalFilledBox: $totalFilledBox maxTotalFilledBox: $maxTotalFilledBox");
-            }
+            $maxIndex = $this->getMaxFilledBoxTruckKey($tmpSelectedTempTruck);
+            // dump($maxIndex);
+            // dump("individualTruckTotal: $individualTruckTotal otherBoxTotal: $otherBoxTotal totalFilledBox: $totalFilledBox maxTotalFilledBox: $maxTotalFilledBox");
             $finalSelectedTempTruck = $tmpSelectedTempTruck[$maxIndex];
         } else {
             $finalSelectedTempTruck = $tmpSelectedTempTruck;
@@ -1048,6 +1054,40 @@ class FetchDataController extends Controller
 
         return $finalSelectedTempTruck;
         return $selectedTempTruck;
+    }
+
+    private function getMaxFilledBoxTruckKey($tmpFilteredTruckInfo)
+    {
+        $maxFilledBoxQuantity = $maxFilledBoxTruckKey = $maxFullyUnfilledTotalEmptySpaceByLength = null;
+        foreach ($tmpFilteredTruckInfo as $tempKey => $item) {
+            $truckItem = $item;
+            $count = $truckItem['total_truck'];
+            if ($count > 1) {
+                $excludedIndexes = [$count - 1]; // Replace with the indexes you want to exclude
+                foreach ($excludedIndexes as $excludeIndex) {
+                    unset($truckItem['individual_truck'][$excludeIndex]);
+                    unset($truckItem['other_box_load_info'][$excludeIndex]);
+                    unset($truckItem['truck_space'][$excludeIndex]);
+                }
+            }
+            $individualTruckTotal = array_sum(array_column($truckItem['individual_truck'], 'total_filled_box_quantity'));
+            $otherBoxTotal = array_sum(array_column($truckItem['other_box_load_info'], 'total_filled_box_quantity'));
+
+            $totalFilledBox = $individualTruckTotal + $otherBoxTotal;
+
+            $fullyUnfilledTotalEmptySpaceByLength = array_sum(array_column($item['truck_space'], 'fully_unfilled_total_empty_space_by_length'));
+            // dump("fullyUnfilledTotalEmptySpaceByLength: $fullyUnfilledTotalEmptySpaceByLength");
+
+            if ($totalFilledBox == $maxFilledBoxQuantity && $fullyUnfilledTotalEmptySpaceByLength < $maxFullyUnfilledTotalEmptySpaceByLength) {
+                $maxFilledBoxTruckKey = $tempKey;
+            } elseif ($totalFilledBox > $maxFilledBoxQuantity) {
+                $maxFilledBoxQuantity = $totalFilledBox;
+                $maxFullyUnfilledTotalEmptySpaceByLength = $fullyUnfilledTotalEmptySpaceByLength;
+                $maxFilledBoxTruckKey = $tempKey;
+            }
+        }
+
+        return $maxFilledBoxTruckKey;
     }
 
     private function getBoxFilledInfo($finalSelectedTempTruck, $boxInfo)
